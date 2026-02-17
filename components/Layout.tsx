@@ -52,9 +52,11 @@ export const Layout: React.FC<LayoutProps> = ({
             className="flex items-center space-x-3 cursor-pointer group"
             onClick={() => onNavigate('home')}
           >
-             <div className="w-10 h-10 rounded-full bg-strongs-gold flex items-center justify-center text-strongs-darker font-bold border-2 border-white">
-                SB
-             </div>
+             <img 
+               src="/logo.png" 
+               alt="Strongs Brazil Logo" 
+               className="w-12 h-12 rounded-full border-2 border-white object-cover shadow-lg group-hover:border-strongs-gold transition-colors" 
+             />
              <h1 className="text-3xl font-display font-bold text-white tracking-widest group-hover:text-strongs-gold transition-colors">
                STRONGS <span className="text-strongs-gold">BRAZIL</span>
              </h1>
