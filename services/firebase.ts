@@ -6,14 +6,13 @@ import { getDatabase, Database } from "firebase/database";
 // 2. Substitua os valores abaixo pelos seus novos valores.
 
 const firebaseConfig = {
-  apiKey: "COLE_SUA_NOVA_API_KEY_AQUI",
-  authDomain: "SEU_NOVO_ID.firebaseapp.com",
-  databaseURL: "https://SEU_NOVO_ID-default-rtdb.firebaseio.com",
-  projectId: "SEU_NOVO_ID",
-  storageBucket: "SEU_NOVO_ID.firebasestorage.app",
-  messagingSenderId: "SEUS_NUMEROS",
-  appId: "1:SEUS_NUMEROS:web:SEUS_CODIGOS",
-  measurementId: "G-SEU_CODIGO"
+  apiKey: "AIzaSyCcqFI5GyL9dgfC_ZPiR61pU7pLUEDpD9w",
+  authDomain: "strongs-v2-51d43.firebaseapp.com",
+  databaseURL: "https://strongs-v2-51d43-default-rtdb.firebaseio.com",
+  projectId: "strongs-v2-51d43",
+  storageBucket: "strongs-v2-51d43.firebasestorage.app",
+  messagingSenderId: "282461406755",
+  appId: "1:282461406755:web:bf8ef8eaefb3aa1289d396"
 };
 
 // Verificamos se o usuário já configurou o arquivo para evitar erros de conexão
