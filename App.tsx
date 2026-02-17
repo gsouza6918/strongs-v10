@@ -120,6 +120,8 @@ const App: React.FC = () => {
                     const restoredUser = safeData.users.find(u => u.id === storedUid);
                     if (restoredUser) {
                         safeData.currentUser = restoredUser;
+                        // IMPORTANT FIX: Explicitly set state to trigger re-render with logged-in user
+                        setCurrentUser(restoredUser); 
                         currentUserRef.current = restoredUser; // Sync ref immediately
                     }
                 }
@@ -258,7 +260,7 @@ const App: React.FC = () => {
   // --- PAGES ---
 
   const HomePage = () => (
-    <div className="space-y-12">
+    <div className="space-y-12 animate-fadeIn">
       {/* Hero */}
       <div className="text-center py-12 px-4 bg-gradient-to-b from-transparent to-black/40 rounded-3xl border border-strongs-gold/20 relative overflow-hidden">
         <div className="relative z-10">
@@ -360,7 +362,7 @@ const App: React.FC = () => {
     }
 
     return (
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-3xl mx-auto animate-fadeIn">
         <div className="text-center mb-10">
           <h2 className="text-4xl font-display font-bold text-white mb-2 uppercase tracking-widest">
              <UserPlus className="inline mr-2 text-strongs-gold" size={32} />
@@ -524,193 +526,222 @@ const App: React.FC = () => {
     );
   };
 
-  const NewsDetailPage = () => {
-    if (!data) return null;
-    const post = data.news.find(n => n.id === selectedNews);
-    if (!post) return <div>Notícia não encontrada</div>;
-
-    const hasAccess = currentUser && ['MEMBER', 'MANAGER', 'MOD', 'ADMIN', 'OWNER'].includes(currentUser.role);
-
-    return (
-      <div className="max-w-4xl mx-auto bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-2xl">
-        <div className="h-64 md:h-96 relative">
-          <img src={post.coverImage} className="w-full h-full object-cover" alt={post.title} />
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
-          <div className="absolute bottom-0 left-0 p-8">
-            <h1 className="text-4xl md:text-5xl font-display font-bold text-white mb-2 drop-shadow-md">{post.title}</h1>
-            <p className="text-gray-300 text-lg">{post.subject}</p>
-          </div>
-        </div>
-        
-        <div className="p-8">
-          {hasAccess ? (
-            <div 
-              className="prose prose-invert prose-lg max-w-none text-gray-300"
-              dangerouslySetInnerHTML={{ __html: post.content }}
-            />
-          ) : (
-            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-8 text-center my-8">
-              <Lock size={48} className="mx-auto text-strongs-gold mb-4" />
-              <h3 className="text-2xl font-bold text-white mb-2">Conteúdo Exclusivo</h3>
-              <p className="text-gray-400 mb-6 max-w-md mx-auto">
-                Junte-se a nossa confederação e fique por dentro de nossas notícias e dicas a respeito do Top Eleven.
-              </p>
-              <Button onClick={() => setCurrentPage('login')}>Fazer Login / Cadastro</Button>
-            </div>
-          )}
-          <div className="mt-8 pt-8 border-t border-gray-800">
-             <Button variant="ghost" onClick={() => setCurrentPage('home')}>Voltar para Início</Button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const ConfederationsPage = () => {
-    if (!data) return null;
-    // Filter active confs
-    const activeConfs = data.confederations.filter(c => c.active !== false);
-
-    return (
-      <div className="space-y-8">
-        <div className="text-center mb-8">
+  const ConfederationsPage = () => (
+    <div className="space-y-8 animate-fadeIn">
+       <div className="text-center mb-10">
           <h2 className="text-4xl font-display font-bold text-white mb-2 uppercase tracking-widest">
-             <Users className="inline mr-2 text-strongs-gold" size={32} />
-             Nossas <span className="text-strongs-gold">Confederações</span>
+            Nossas <span className="text-strongs-gold">Confederações</span>
           </h2>
-          <div className="w-24 h-1 bg-strongs-gold mx-auto rounded-full"></div>
+          <div className="w-24 h-1 bg-strongs-gold mx-auto rounded-full mb-4"></div>
+          <p className="text-gray-400">Conheça as elites da Strongs Brazil.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {activeConfs.map(conf => {
-            const members = data.members.filter(m => m.confId === conf.id);
-            
-            return (
-              <div key={conf.id} className="bg-gray-900/80 border border-gray-700 rounded-xl overflow-hidden hover:border-strongs-gold/50 transition-all duration-300 shadow-xl group">
-                <div className="p-6 bg-gradient-to-b from-gray-800 to-gray-900 relative">
-                   {/* Background Tier Badge */}
-                   <div className="absolute top-2 right-2">
-                      <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${
-                        conf.tier === ConfTier.SUPREME ? 'bg-purple-900 text-purple-200' :
-                        conf.tier === ConfTier.DIAMOND ? 'bg-blue-900 text-blue-200' :
-                        conf.tier === ConfTier.PLATINUM ? 'bg-slate-600 text-white' :
-                        'bg-yellow-900 text-yellow-200'
-                      }`}>{conf.tier}</span>
-                   </div>
-
-                   <div className="flex flex-col items-center">
-                      <div className="w-24 h-24 rounded-full bg-black/40 border-2 border-gray-600 mb-4 flex items-center justify-center overflow-hidden shadow-lg group-hover:border-strongs-gold transition-colors">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+           {data?.confederations.filter(c => c.active !== false).map(conf => {
+             const members = data.members.filter(m => m.confId === conf.id);
+             return (
+               <div key={conf.id} className="bg-gray-900/80 backdrop-blur border border-gray-700 rounded-xl overflow-hidden shadow-xl hover:border-strongs-gold/50 transition-all">
+                  <div className="p-6 bg-gradient-to-r from-gray-800 to-gray-900 border-b border-gray-700 flex items-center justify-between">
+                     <div className="flex items-center gap-4">
                         {conf.imageUrl ? (
-                          <img src={conf.imageUrl} alt={conf.name} className="w-full h-full object-contain" />
+                           <img src={conf.imageUrl} className="w-16 h-16 rounded-full border-2 border-strongs-gold object-contain bg-black/50" alt={conf.name} />
                         ) : (
-                          <Shield size={40} className="text-gray-600" />
+                           <div className="w-16 h-16 rounded-full border-2 border-gray-600 bg-gray-800 flex items-center justify-center">
+                              <Shield size={32} className="text-gray-500"/>
+                           </div>
                         )}
-                      </div>
-                      <h3 className="text-2xl font-display font-bold text-white text-center">{conf.name}</h3>
-                      <p className="text-sm text-gray-400">{members.length} / 6 Membros</p>
-                   </div>
-                </div>
-                
-                <div className="p-4 bg-black/20 border-t border-gray-800">
-                  <h4 className="text-xs font-bold text-strongs-gold uppercase mb-3 tracking-wider">Membros do Time</h4>
-                  <div className="space-y-2">
-                    {members.length > 0 ? members.map(member => (
-                      <div key={member.id} className="flex justify-between items-center text-sm p-2 rounded bg-gray-800/50 hover:bg-gray-800 transition-colors">
-                        <span className="font-bold text-gray-200">{member.name}</span>
-                        <span className="text-xs text-gray-500">{member.teamName}</span>
-                      </div>
-                    )) : (
-                      <div className="text-center py-4 text-gray-600 italic text-sm">Nenhum membro registrado</div>
-                    )}
+                        <div>
+                           <h3 className="text-2xl font-display font-bold text-white">{conf.name}</h3>
+                           <span className={`text-xs px-2 py-1 rounded font-bold uppercase tracking-wider ${
+                              conf.tier === ConfTier.SUPREME ? 'bg-purple-900 text-purple-200' :
+                              conf.tier === ConfTier.DIAMOND ? 'bg-blue-900 text-blue-200' :
+                              conf.tier === ConfTier.PLATINUM ? 'bg-slate-600 text-white' :
+                              'bg-yellow-900 text-yellow-200'
+                           }`}>
+                              {conf.tier}
+                           </span>
+                        </div>
+                     </div>
+                     <div className="text-right hidden sm:block">
+                        <span className="block text-3xl font-display font-bold text-white">{members.length}</span>
+                        <span className="text-xs text-gray-400 uppercase">Membros</span>
+                     </div>
                   </div>
-                </div>
-              </div>
-            );
-          })}
+                  
+                  <div className="p-4">
+                     <h4 className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                        <Users size={12}/> Elenco Atual
+                     </h4>
+                     {members.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                           {members.map(member => (
+                              <div key={member.id} className="flex items-center gap-3 bg-black/20 p-2 rounded border border-gray-800">
+                                 <div className="w-8 h-8 rounded bg-gray-800 flex items-center justify-center font-bold text-gray-500 text-xs">
+                                    {member.name.charAt(0)}
+                                 </div>
+                                 <div className="overflow-hidden">
+                                    <p className="text-sm font-bold text-gray-200 truncate">{member.name}</p>
+                                    <p className="text-xs text-gray-500 truncate">{member.teamName}</p>
+                                 </div>
+                                 {member.isManager && (
+                                    <span className="ml-auto text-[10px] bg-blue-900 text-blue-200 px-1 rounded uppercase font-bold" title="Gestor">G</span>
+                                 )}
+                              </div>
+                           ))}
+                        </div>
+                     ) : (
+                        <p className="text-sm text-gray-500 italic">Nenhum membro registrado.</p>
+                     )}
+                  </div>
+                  
+                  <div className="p-4 border-t border-gray-800 bg-black/20 text-center">
+                     <Button variant="ghost" className="text-xs w-full" onClick={() => setCurrentPage('rankings')}>
+                        Ver Performance no Ranking
+                     </Button>
+                  </div>
+               </div>
+             );
+           })}
         </div>
-      </div>
-    );
-  };
+    </div>
+  );
 
   const LoginPage = () => (
-    <div className="max-w-md mx-auto mt-10">
-      <div className="bg-gray-900/80 backdrop-blur-md border border-gray-700 p-8 rounded-2xl shadow-2xl">
+    <div className="max-w-md mx-auto mt-10 animate-fadeIn">
+      <div className="bg-gray-900/90 backdrop-blur p-8 rounded-xl shadow-2xl border border-gray-700">
         <div className="text-center mb-8">
-           <div className="w-16 h-16 bg-strongs-gold rounded-full flex items-center justify-center mx-auto mb-4 text-black font-bold text-2xl border-4 border-gray-800 shadow-lg">SB</div>
-           <h2 className="text-3xl font-display font-bold text-white uppercase tracking-widest">
-             {authMode === 'LOGIN' ? 'Área de Membros' : 'Criar Conta'}
+           <h2 className="text-3xl font-display font-bold text-white mb-2">
+             {authMode === 'LOGIN' ? 'Acessar Conta' : 'Criar Conta'}
            </h2>
+           <p className="text-gray-400 text-sm">
+             {authMode === 'LOGIN' ? 'Bem-vindo de volta à Strongs Brazil.' : 'Junte-se à nossa comunidade.'}
+           </p>
         </div>
+
+        {loginError && (
+          <div className="bg-red-900/30 border border-red-500 text-red-200 p-3 rounded mb-4 text-sm text-center">
+            {loginError}
+          </div>
+        )}
 
         {authMode === 'LOGIN' ? (
           <div className="space-y-4">
-            {loginError && (
-              <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded text-sm text-center flex items-center justify-center gap-2">
-                 <AlertTriangle size={16} /> {loginError}
-              </div>
-            )}
-            <input 
-              className="w-full bg-black/40 border border-gray-600 rounded p-3 text-white focus:border-strongs-gold outline-none transition-colors"
-              placeholder="Usuário"
-              value={loginUser}
-              onChange={e => { setLoginUser(e.target.value); setLoginError(null); }}
-            />
-            <input 
-              type="password"
-              className="w-full bg-black/40 border border-gray-600 rounded p-3 text-white focus:border-strongs-gold outline-none transition-colors"
-              placeholder="Senha"
-              value={loginPass}
-              onChange={e => { setLoginPass(e.target.value); setLoginError(null); }}
-            />
-            
-            <div className="flex items-center">
+             <div>
+               <label className="text-xs text-gray-400 font-bold uppercase mb-1 block">Usuário</label>
+               <input 
+                 className="w-full bg-black/40 border border-gray-600 rounded p-3 text-white focus:border-strongs-gold outline-none"
+                 value={loginUser}
+                 onChange={e => setLoginUser(e.target.value)}
+                 onKeyDown={e => e.key === 'Enter' && handleLogin()}
+                 placeholder="Seu usuário"
+               />
+             </div>
+             <div>
+               <label className="text-xs text-gray-400 font-bold uppercase mb-1 block">Senha</label>
+               <input 
+                 type="password"
+                 className="w-full bg-black/40 border border-gray-600 rounded p-3 text-white focus:border-strongs-gold outline-none"
+                 value={loginPass}
+                 onChange={e => setLoginPass(e.target.value)}
+                 onKeyDown={e => e.key === 'Enter' && handleLogin()}
+                 placeholder="Sua senha"
+               />
+             </div>
+             
+             <div className="flex items-center">
                 <input 
-                    type="checkbox" 
-                    id="keepConnected"
-                    checked={keepConnected}
-                    onChange={(e) => setKeepConnected(e.target.checked)}
-                    className="mr-2 w-4 h-4 accent-strongs-gold cursor-pointer"
+                  type="checkbox" 
+                  id="keepConnected"
+                  checked={keepConnected}
+                  onChange={e => setKeepConnected(e.target.checked)}
+                  className="mr-2 accent-strongs-gold h-4 w-4"
                 />
-                <label htmlFor="keepConnected" className="text-gray-400 text-sm cursor-pointer select-none">
-                    Mantenha-me conectado
-                </label>
-            </div>
+                <label htmlFor="keepConnected" className="text-sm text-gray-400 cursor-pointer select-none">Manter conectado</label>
+             </div>
 
-            <Button fullWidth onClick={handleLogin} className="py-3 text-lg">Entrar</Button>
-            <p className="text-center text-sm text-gray-500 mt-4">
-              Não tem conta? <button onClick={() => { setAuthMode('REGISTER'); setLoginError(null); }} className="text-strongs-gold hover:underline">Cadastre-se</button>
-            </p>
+             <Button fullWidth onClick={handleLogin} className="py-3 text-lg mt-2">Entrar</Button>
+             
+             <p className="text-center text-sm text-gray-500 mt-4">
+               Não tem uma conta? <button onClick={() => { setAuthMode('REGISTER'); setLoginError(null); }} className="text-strongs-gold hover:underline font-bold">Cadastre-se</button>
+             </p>
           </div>
         ) : (
           <div className="space-y-4">
-            <input 
-              className="w-full bg-black/40 border border-gray-600 rounded p-3 text-white focus:border-strongs-gold outline-none transition-colors"
-              placeholder="Nome de Exibição"
-              value={registerName}
-              onChange={e => setRegisterName(e.target.value)}
-            />
-            <input 
-              className="w-full bg-black/40 border border-gray-600 rounded p-3 text-white focus:border-strongs-gold outline-none transition-colors"
-              placeholder="Usuário"
-              value={registerUser}
-              onChange={e => setRegisterUser(e.target.value)}
-            />
-            <input 
-              type="password"
-              className="w-full bg-black/40 border border-gray-600 rounded p-3 text-white focus:border-strongs-gold outline-none transition-colors"
-              placeholder="Senha"
-              value={registerPass}
-              onChange={e => setRegisterPass(e.target.value)}
-            />
-            <Button fullWidth onClick={handleRegister} className="py-3 text-lg">Criar Conta</Button>
-            <p className="text-center text-sm text-gray-500 mt-4">
-              Já tem conta? <button onClick={() => { setAuthMode('LOGIN'); setLoginError(null); }} className="text-strongs-gold hover:underline">Faça Login</button>
-            </p>
+             <div>
+               <label className="text-xs text-gray-400 font-bold uppercase mb-1 block">Nome de Exibição</label>
+               <input 
+                 className="w-full bg-black/40 border border-gray-600 rounded p-3 text-white focus:border-strongs-gold outline-none"
+                 value={registerName}
+                 onChange={e => setRegisterName(e.target.value)}
+                 placeholder="Ex: João Silva"
+               />
+             </div>
+             <div>
+               <label className="text-xs text-gray-400 font-bold uppercase mb-1 block">Usuário (Login)</label>
+               <input 
+                 className="w-full bg-black/40 border border-gray-600 rounded p-3 text-white focus:border-strongs-gold outline-none"
+                 value={registerUser}
+                 onChange={e => setRegisterUser(e.target.value)}
+                 placeholder="user123"
+               />
+             </div>
+             <div>
+               <label className="text-xs text-gray-400 font-bold uppercase mb-1 block">Senha</label>
+               <input 
+                 type="password"
+                 className="w-full bg-black/40 border border-gray-600 rounded p-3 text-white focus:border-strongs-gold outline-none"
+                 value={registerPass}
+                 onChange={e => setRegisterPass(e.target.value)}
+                 placeholder="******"
+               />
+             </div>
+
+             <Button fullWidth onClick={handleRegister} className="py-3 text-lg mt-2">Criar Conta</Button>
+             
+             <p className="text-center text-sm text-gray-500 mt-4">
+               Já tem conta? <button onClick={() => { setAuthMode('LOGIN'); setLoginError(null); }} className="text-strongs-gold hover:underline font-bold">Faça Login</button>
+             </p>
           </div>
         )}
       </div>
     </div>
   );
+
+  const NewsDetailPage = () => {
+    const post = data?.news.find(n => n.id === selectedNews);
+
+    if (!post) return (
+       <div className="text-center py-20">
+          <h2 className="text-2xl text-white font-bold">Notícia não encontrada.</h2>
+          <Button onClick={() => setCurrentPage('home')} className="mt-4">Voltar</Button>
+       </div>
+    );
+
+    return (
+      <div className="max-w-4xl mx-auto bg-gray-900 rounded-xl overflow-hidden shadow-2xl border border-gray-800 animate-fadeIn">
+         <div className="h-64 md:h-96 w-full relative">
+            <img src={post.coverImage} className="w-full h-full object-cover" alt={post.title}/>
+            <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
+            <div className="absolute bottom-0 left-0 p-6 md:p-10 w-full">
+               <Button onClick={() => setCurrentPage('home')} variant="ghost" className="text-white border-white/30 hover:bg-white/10 mb-4 text-xs">
+                  ← Voltar para Início
+               </Button>
+               <h1 className="text-3xl md:text-5xl font-display font-bold text-white mb-2 leading-tight drop-shadow-lg">{post.title}</h1>
+               <div className="flex items-center text-gray-300 text-sm">
+                  <span className="bg-strongs-gold text-black px-2 py-0.5 rounded font-bold uppercase text-xs mr-3">Notícia</span>
+                  <span>{new Date(post.date).toLocaleDateString()}</span>
+               </div>
+            </div>
+         </div>
+         
+         <div className="p-6 md:p-10">
+            <div className="prose prose-invert prose-lg max-w-none text-gray-300">
+               <div dangerouslySetInnerHTML={{ __html: post.content }} />
+            </div>
+         </div>
+      </div>
+    );
+  };
 
   // Critical Error Screen (Connection Failed)
   if (errorMsg) {

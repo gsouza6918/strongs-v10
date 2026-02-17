@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { AppData, User, UserRole, ConfTier, Member, Confederation, GameResult, Attendance, NewsPost, JoinApplication, ArchivedSeason } from '../types';
 import { Button } from './Button';
-import { Trash2, Edit, Plus, UserPlus, ShieldCheck, ChevronDown, ChevronUp, Save, Check, Trophy, XCircle, ImageIcon, ClipboardList, CheckCircle2, Clock, ExternalLink, Power, PowerOff, Play, History } from 'lucide-react';
+import { Trash2, Edit, Plus, UserPlus, ShieldCheck, ChevronDown, ChevronUp, Save, Check, Trophy, XCircle, ImageIcon, ClipboardList, CheckCircle2, Clock, ExternalLink, Power, PowerOff, Play, History, Download } from 'lucide-react';
 import ReactQuill from 'react-quill';
 
 interface AdminPanelProps {
@@ -84,6 +84,9 @@ const ConfManagement: React.FC<{data: AppData, currentUser: User, onUpdateData: 
     const [newMemberName, setNewMemberName] = useState('');
     const [newMemberTeam, setNewMemberTeam] = useState('');
     const [newMemberLinkUser, setNewMemberLinkUser] = useState('');
+
+    // LOCAL EDITS STATE
+    const [localMemberEdits, setLocalMemberEdits] = useState<Record<string, Member>>({});
 
     const handleSaveConf = () => {
       if (!newConfName) return;
@@ -205,17 +208,38 @@ const ConfManagement: React.FC<{data: AppData, currentUser: User, onUpdateData: 
        onUpdateData({ members: updatedMembers, users: updatedUsers });
     };
 
-    const updateScore = (memberId: string, weekIdx: number, gameIdx: number, field: 'result' | 'attendance', value: string) => {
-      const updatedMembers = data.members.map(m => {
-        if (m.id !== memberId) return m;
-        const newWeeks = [...m.weeks];
-        if(!newWeeks[weekIdx]) newWeeks[weekIdx] = { games: Array(4).fill({result: 'NONE', attendance: 'NONE'}) };
-        const newGames = [...newWeeks[weekIdx].games];
-        newGames[gameIdx] = { ...newGames[gameIdx], [field]: value };
-        newWeeks[weekIdx] = { ...newWeeks[weekIdx], games: newGames };
-        return { ...m, weeks: newWeeks };
-      });
-      onUpdateData({ members: updatedMembers });
+    // Updates LOCAL state only
+    const updateLocalScore = (member: Member, weekIdx: number, gameIdx: number, field: 'result' | 'attendance', value: string) => {
+      // Get current state from local edits OR original data
+      const currentMemberState = localMemberEdits[member.id] || member;
+
+      const newWeeks = [...currentMemberState.weeks];
+      if(!newWeeks[weekIdx]) newWeeks[weekIdx] = { games: Array(4).fill({result: 'NONE', attendance: 'NONE'}) };
+      const newGames = [...newWeeks[weekIdx].games];
+      newGames[gameIdx] = { ...newGames[gameIdx], [field]: value };
+      newWeeks[weekIdx] = { ...newWeeks[weekIdx], games: newGames };
+
+      const updatedMember = { ...currentMemberState, weeks: newWeeks };
+      
+      setLocalMemberEdits(prev => ({
+          ...prev,
+          [member.id]: updatedMember
+      }));
+    };
+
+    // Commits LOCAL state to FIREBASE
+    const saveMemberChanges = (memberId: string) => {
+        const editedMember = localMemberEdits[memberId];
+        if (!editedMember) return;
+
+        // Merge into global members array
+        const updatedMembers = data.members.map(m => m.id === memberId ? editedMember : m);
+        onUpdateData({ members: updatedMembers });
+
+        // Clear local edit for this member (optional, but good for UI consistency)
+        const newLocalEdits = { ...localMemberEdits };
+        delete newLocalEdits[memberId];
+        setLocalMemberEdits(newLocalEdits);
     };
 
     const availableUsers = data.users.filter(u => !u.linkedMemberId);
@@ -342,13 +366,32 @@ const ConfManagement: React.FC<{data: AppData, currentUser: User, onUpdateData: 
                     )}
 
                     <div className="space-y-4">
-                      {members.map(member => (
-                        <div key={member.id} className="border border-gray-700 rounded bg-black/20 p-3">
+                      {members.map(memberData => {
+                        // Decide whether to show original data or local edited data
+                        const member = localMemberEdits[memberData.id] || memberData;
+                        const hasUnsavedChanges = !!localMemberEdits[memberData.id];
+
+                        return (
+                        <div key={member.id} className={`border rounded bg-black/20 p-3 ${hasUnsavedChanges ? 'border-yellow-500/50 shadow-[0_0_10px_rgba(234,179,8,0.1)]' : 'border-gray-700'}`}>
                           <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-700/50">
                             <div>
-                               <span className="font-bold text-white text-lg">{member.name}</span>
-                               <span className="text-gray-400 text-sm ml-2">({member.teamName})</span>
-                               {member.isManager && <span className="ml-2 bg-blue-900 text-blue-200 text-xs px-1 rounded">GESTOR</span>}
+                               <div className="flex items-center gap-2">
+                                  <span className="font-bold text-white text-lg">{member.name}</span>
+                                  <span className="text-gray-400 text-sm">({member.teamName})</span>
+                                  {member.isManager && <span className="bg-blue-900 text-blue-200 text-xs px-1 rounded">GESTOR</span>}
+                               </div>
+                               {/* SAVE BUTTON FOR THIS MEMBER */}
+                               {hasEditAccess && (
+                                   <Button 
+                                    onClick={() => saveMemberChanges(member.id)}
+                                    disabled={!hasUnsavedChanges}
+                                    variant={hasUnsavedChanges ? 'primary' : 'ghost'}
+                                    className={`text-xs py-1 mt-2 flex items-center gap-1 ${!hasUnsavedChanges ? 'opacity-50' : ''}`}
+                                   >
+                                     <Save size={14} /> 
+                                     {hasUnsavedChanges ? 'Salvar Alterações' : 'Alterações Salvas'}
+                                   </Button>
+                               )}
                             </div>
                             <div className="flex space-x-2">
                                {canManageConfs && (
@@ -393,7 +436,7 @@ const ConfManagement: React.FC<{data: AppData, currentUser: User, onUpdateData: 
                                               <div className="flex flex-col gap-1">
                                                 <select 
                                                   value={game.result}
-                                                  onChange={(e) => updateScore(member.id, weekIdx, gameIdx, 'result', e.target.value)}
+                                                  onChange={(e) => updateLocalScore(memberData, weekIdx, gameIdx, 'result', e.target.value)}
                                                   className={`rounded p-1 text-xs border border-gray-600 bg-gray-900 text-white ${game.result === 'WIN' ? 'border-green-500 text-green-400' : game.result === 'LOSS' ? 'border-red-500 text-red-400' : ''}`}
                                                 >
                                                   <option value="NONE">- Res -</option>
@@ -403,7 +446,7 @@ const ConfManagement: React.FC<{data: AppData, currentUser: User, onUpdateData: 
                                                 </select>
                                                 <select
                                                   value={game.attendance}
-                                                  onChange={(e) => updateScore(member.id, weekIdx, gameIdx, 'attendance', e.target.value)}
+                                                  onChange={(e) => updateLocalScore(memberData, weekIdx, gameIdx, 'attendance', e.target.value)}
                                                   className="bg-gray-800 border border-gray-600 rounded p-1 text-xs text-gray-300"
                                                 >
                                                   <option value="NONE">- Pres -</option>
@@ -422,7 +465,7 @@ const ConfManagement: React.FC<{data: AppData, currentUser: User, onUpdateData: 
                             </div>
                           )}
                         </div>
-                      ))}
+                      )})}
                     </div>
                   </div>
                 )}
