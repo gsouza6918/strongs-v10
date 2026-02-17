@@ -216,26 +216,35 @@ const ensureArray = (data: any) => {
     // PREPARE FOR FIREBASE SAVE
     const { currentUser: _, ...dbPayload } = updatedData;
     
-    // --- CORREÇÃO DE SEGURANÇA ---
-    // Garante que 'members' seja tratado como array, mesmo se vier como Objeto do estado local
+    // Garante que estamos trabalhando com um array antes de processar
     let membersToSave = dbPayload.members || [];
     if (!Array.isArray(membersToSave)) {
-        // Se for objeto, converte para array
         membersToSave = Object.values(membersToSave);
     }
-
-    // Filtra nulos/indefinidos antes de sanitizar
+    // Remove nulos
     membersToSave = membersToSave.filter((m: any) => m !== null && m !== undefined);
 
-    console.log("Salvando no Firebase...", membersToSave.length, "membros.");
+    // Sanitiza a estrutura interna (garante as semanas/jogos)
+    const sanitizedMembersList = sanitizeMembers(membersToSave);
+
+    // --- SOLUÇÃO DEFINITIVA ---
+    // Converte o Array em um Objeto indexado pelo ID do membro.
+    // De: [ {id: "abc", nome: "X"}, {id: "def", nome: "Y"} ]
+    // Para: { "abc": {id: "abc", nome: "X"}, "def": {id: "def", nome: "Y"} }
+    const membersAsMap: Record<string, any> = {};
+    sanitizedMembersList.forEach(member => {
+        if (member && member.id) {
+            membersAsMap[member.id] = member;
+        }
+    });
+
+    console.log("Salvando estrutura blindada:", Object.keys(membersAsMap).length, "membros.");
 
     const cleanPayload = {
       ...dbPayload,
-      // Aplica a sanitização profunda no array garantido
-      members: sanitizeMembers(membersToSave),
+      members: membersAsMap, // SALVA O OBJETO, NÃO A LISTA
       users: ensureArray(dbPayload.users),
       confederations: ensureArray(dbPayload.confederations),
-      // Garante que outras listas também não quebrem
       news: ensureArray(dbPayload.news),
       joinApplications: ensureArray(dbPayload.joinApplications),
       top100History: ensureArray(dbPayload.top100History),
@@ -246,12 +255,12 @@ const ensureArray = (data: any) => {
     if (isConfigured && db) {
       set(ref(db, 'strongs_db'), cleanPayload)
         .then(() => {
-            console.log("Salvo com sucesso!");
-            setSaveError(null);
+             console.log("Salvo com sucesso!");
+             setSaveError(null);
         })
         .catch(err => {
             console.error("Erro ao salvar no Firebase:", err);
-            setSaveError("Falha ao salvar alterações: " + err.message);
+            setSaveError("Falha ao salvar alterações. Verifique sua conexão.");
         });
     }
   };
