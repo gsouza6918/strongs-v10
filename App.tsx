@@ -43,31 +43,46 @@ const App: React.FC = () => {
   const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
 
   // Helper to force arrays even if Firebase returns Objects (happens with sparse arrays or deletions)
-const ensureArray = (data: any) => {
+  const ensureArray = (data: any) => {
     if (!data) return [];
     if (Array.isArray(data)) {
         return data.filter(item => item !== null && item !== undefined);
     }
-    // Se for objeto (comportamento do Firebase para arrays esparsos), converte
+    // If it's an object (Firebase behavior for sparse arrays), convert to array
     return Object.values(data).filter(item => item !== null && item !== undefined);
   };
 
-// Deep Sanitize Members: Ensures every member has 4 weeks and 4 games structure
-  const sanitizeMembers = (rawMembers: any[]): Member[] => {
-      const cleanList = ensureArray(rawMembers);
+  /**
+   * DEEP SANITIZATION & CONVERSION
+   * This function serves two purposes:
+   * 1. Converts the input (which might be an Object/Map from Firebase or an Array) into a valid Array for the UI.
+   * 2. Ensures the deep structure of 'weeks' and 'games' exists for every member, preventing crashes.
+   */
+  const sanitizeMembers = (input: any): Member[] => {
+      if (!input) return [];
       
-      return cleanList.map((m: any) => {
-          // CORREÇÃO AQUI: Não use Object.values para semanas.
-          // Acesse diretamente o objeto ou array original.
-          // Isso funciona tanto se o Firebase retornar Array [...] quanto Objeto {"0":...}
-          const rawWeeks = m.weeks || {};
+      // 1. Normalize Input to Array
+      // Firebase might return an Object map: { "id1": {...}, "id2": {...} }
+      // Or an Array (legacy data): [{...}, {...}]
+      let list: any[] = [];
+      if (Array.isArray(input)) {
+          list = input.filter(i => i !== null && i !== undefined);
+      } else if (typeof input === 'object') {
+          list = Object.values(input).filter(i => i !== null && i !== undefined);
+      }
+
+      // 2. Map and Fix Structure
+      return list.map((m: any) => {
+          // Fallback ID if missing
+          if (!m.id) {
+             m.id = Math.random().toString(36).substr(2, 9);
+          }
+
+          // Handle weeks: Access keys 0,1,2,3 explicitly to handle object-based sparse arrays
+          const rawWeeks = m.weeks || {}; 
           
           const sanitizedWeeks = [0, 1, 2, 3].map(weekIdx => {
-              // Acessa pelo índice numérico exato. Se não existir, cria vazio.
-              // Isso impede que a Semana 2 pule para o lugar da Semana 1.
               const w = rawWeeks[weekIdx] || {};
-              
-              // Mesma correção para os jogos
               const rawGames = w.games || {};
               
               const sanitizedGames = [0, 1, 2, 3].map(gameIdx => {
@@ -129,11 +144,15 @@ const ensureArray = (data: any) => {
 
           if (val) {
             // CRITICAL FIX: Sanitize Members Deeply
+            // Here 'val.members' might come as an Object (Map) from Firebase. 
+            // sanitizeMembers converts it back to Array for the AppData type.
+            const membersArray = sanitizeMembers(val.members);
+
             const safeData: AppData = {
                 ...val,
                 users: ensureArray(val.users),
                 confederations: ensureArray(val.confederations),
-                members: sanitizeMembers(val.members), // Use Deep Sanitize
+                members: membersArray, // UI always works with Array
                 news: ensureArray(val.news),
                 top100History: ensureArray(val.top100History),
                 joinApplications: ensureArray(val.joinApplications),
@@ -165,7 +184,15 @@ const ensureArray = (data: any) => {
             // Ensure default data is also sanitized before saving first time
             defaultData.members = sanitizeMembers(defaultData.members);
             
-            set(dataRef, defaultData).catch(err => {
+            // Initial save will use the new updateData logic conceptually via set
+            // Converting default members array to object map for initial save
+            const initialPayload = { ...defaultData };
+            const membersMap: Record<string, Member> = {};
+            defaultData.members.forEach(m => membersMap[m.id] = m);
+            // @ts-ignore - altering type for firebase save
+            initialPayload.members = membersMap;
+
+            set(dataRef, initialPayload).catch(err => {
                 console.error("Erro ao criar dados iniciais:", err);
                 setErrorMsg("Erro ao criar dados iniciais: " + err.message);
             });
@@ -193,14 +220,12 @@ const ensureArray = (data: any) => {
     return () => unsubscribe();
   }, []); // Run once on mount
 
-// 2. Helper to update Data (Updates Local State + Sends to Firebase)
+  // 2. Helper to update Data (Updates Local State + Sends to Firebase)
   const updateData = (newData: Partial<AppData>) => {
     if (!data) return;
 
-    // Merge new data
+    // 1. Update Local State immediately (Keep members as Array for React UI)
     const updatedData = { ...data, ...newData };
-    
-    // Update Local State immediately (for UI responsiveness)
     setData(updatedData);
 
     // Update Session User if users list changed
@@ -213,51 +238,40 @@ const ensureArray = (data: any) => {
        setCurrentUser(newData.currentUser);
     }
 
-    // PREPARE FOR FIREBASE SAVE
+    // 2. Prepare Payload for Firebase
     const { currentUser: _, ...dbPayload } = updatedData;
     
-    // Garante que estamos trabalhando com um array antes de processar
-    let membersToSave = dbPayload.members || [];
-    if (!Array.isArray(membersToSave)) {
-        membersToSave = Object.values(membersToSave);
-    }
-    // Remove nulos
-    membersToSave = membersToSave.filter((m: any) => m !== null && m !== undefined);
-
-    // Sanitiza a estrutura interna (garante as semanas/jogos)
-    const sanitizedMembersList = sanitizeMembers(membersToSave);
-
-    // --- SOLUÇÃO DEFINITIVA ---
-    // Converte o Array em um Objeto indexado pelo ID do membro.
-    // De: [ {id: "abc", nome: "X"}, {id: "def", nome: "Y"} ]
-    // Para: { "abc": {id: "abc", nome: "X"}, "def": {id: "def", nome: "Y"} }
-    const membersAsMap: Record<string, any> = {};
-    sanitizedMembersList.forEach(member => {
-        if (member && member.id) {
-            membersAsMap[member.id] = member;
+    // CRITICAL FIX: CONVERT MEMBERS ARRAY TO OBJECT MAP
+    // This prevents sparse array issues in Firebase.
+    // Logic: Key = Member ID, Value = Member Object
+    const membersArray = dbPayload.members || [];
+    // Ensure we are working with clean data before mapping
+    const cleanMembersList = sanitizeMembers(membersArray);
+    
+    const membersMap: Record<string, Member> = {};
+    cleanMembersList.forEach(m => {
+        if (m && m.id) {
+            membersMap[m.id] = m;
         }
     });
 
-    console.log("Salvando estrutura blindada:", Object.keys(membersAsMap).length, "membros.");
+    console.log(`[Persistência] Salvando ${Object.keys(membersMap).length} membros como Map.`);
 
     const cleanPayload = {
       ...dbPayload,
-      members: membersAsMap, // SALVA O OBJETO, NÃO A LISTA
+      members: membersMap, // Save as Object Map!
       users: ensureArray(dbPayload.users),
       confederations: ensureArray(dbPayload.confederations),
       news: ensureArray(dbPayload.news),
-      joinApplications: ensureArray(dbPayload.joinApplications),
       top100History: ensureArray(dbPayload.top100History),
+      joinApplications: ensureArray(dbPayload.joinApplications),
       archivedSeasons: ensureArray(dbPayload.archivedSeasons),
     };
 
     // Save to Firebase ONLY if configured
     if (isConfigured && db) {
       set(ref(db, 'strongs_db'), cleanPayload)
-        .then(() => {
-             console.log("Salvo com sucesso!");
-             setSaveError(null);
-        })
+        .then(() => setSaveError(null))
         .catch(err => {
             console.error("Erro ao salvar no Firebase:", err);
             setSaveError("Falha ao salvar alterações. Verifique sua conexão.");

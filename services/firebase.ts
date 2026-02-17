@@ -1,4 +1,4 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, FirebaseApp } from "firebase/app";
 import { getDatabase, Database } from "firebase/database";
 
 // Configuração do Firebase
@@ -16,7 +16,7 @@ const firebaseConfig = {
 export const isConfigured = firebaseConfig.apiKey !== "COLE_SUA_NOVA_API_KEY_AQUI" && 
                             !firebaseConfig.databaseURL.includes("SEU_NOVO_ID");
 
-let app;
+let app: FirebaseApp | undefined;
 let db: Database | undefined;
 
 if (isConfigured) {
@@ -25,7 +25,7 @@ if (isConfigured) {
     // Correção: Passamos a URL explicitamente para garantir a conexão
     db = getDatabase(app, firebaseConfig.databaseURL);
     console.log("Firebase conectado com sucesso!");
-  } catch (error) {
+  } catch (error: any) {
     console.error("Erro ao inicializar Firebase:", error);
   }
 }
