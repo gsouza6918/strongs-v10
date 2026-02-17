@@ -1,3 +1,4 @@
+
 export enum UserRole {
   USER = 'USER', // Registered but no access
   MEMBER = 'MEMBER', // Can read news
@@ -85,6 +86,14 @@ export interface JoinApplication {
   date: string;
 }
 
+export interface ArchivedSeason {
+  id: string;
+  name: string;
+  date: string;
+  members: Member[];
+  confederations: Confederation[];
+}
+
 export interface AppData {
   users: User[];
   confederations: Confederation[];
@@ -92,5 +101,6 @@ export interface AppData {
   news: NewsPost[];
   top100History: Top100Entry[];
   joinApplications: JoinApplication[];
+  archivedSeasons: ArchivedSeason[];
   currentUser: User | null;
 }

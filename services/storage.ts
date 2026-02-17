@@ -1,3 +1,4 @@
+
 import { AppData, User, UserRole, ConfTier } from '../types';
 
 const STORAGE_KEY = 'strongs_brazil_db_v2';
@@ -34,7 +35,8 @@ const DEFAULT_DATA: AppData = {
     }
   ],
   top100History: [],
-  joinApplications: []
+  joinApplications: [],
+  archivedSeasons: []
 };
 
 export const loadData = (): AppData => {
@@ -47,6 +49,10 @@ export const loadData = (): AppData => {
         ...c,
         active: c.active !== undefined ? c.active : true
       }));
+    }
+    // Migration for archivedSeasons
+    if (!parsedData.archivedSeasons) {
+        parsedData.archivedSeasons = [];
     }
     return parsedData;
   }

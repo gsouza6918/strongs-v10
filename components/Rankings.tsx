@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { AppData, ConfTier } from '../types';
 import { calculateMemberPoints, calculateTop100Points } from '../utils';
-import { Trophy, Medal, Star, Crown } from 'lucide-react';
+import { Trophy, Medal, Star, Crown, History } from 'lucide-react';
 
 interface RankingsProps {
   data: AppData;
@@ -11,34 +11,47 @@ type RankingType = 'CONFEDERATIONS' | 'MEMBERS' | 'TOP100';
 
 export const Rankings: React.FC<RankingsProps> = ({ data }) => {
   const [activeTab, setActiveTab] = useState<RankingType>('CONFEDERATIONS');
+  const [selectedSeasonId, setSelectedSeasonId] = useState<string>('current');
+
+  // Determine which data source to use (Live vs Archived)
+  const sourceData = useMemo(() => {
+    if (selectedSeasonId === 'current') {
+      return { members: data.members, confederations: data.confederations };
+    }
+    const archive = data.archivedSeasons?.find(s => s.id === selectedSeasonId);
+    if (archive) {
+      return { members: archive.members, confederations: archive.confederations };
+    }
+    return { members: [], confederations: [] };
+  }, [selectedSeasonId, data]);
 
   // --- CONFEDERATION RANKING CALC ---
   const confRanking = useMemo(() => {
-    return data.confederations
+    return sourceData.confederations
       .filter(conf => conf.active !== false) // Only show active confederations
       .map(conf => {
-        const confMembers = data.members.filter(m => m.confId === conf.id);
+        const confMembers = sourceData.members.filter(m => m.confId === conf.id);
         const totalPoints = confMembers.reduce((sum, member) => sum + calculateMemberPoints(member, conf.tier), 0);
         return { ...conf, totalPoints, memberCount: confMembers.length };
       })
       .sort((a, b) => b.totalPoints - a.totalPoints);
-  }, [data.confederations, data.members]);
+  }, [sourceData.confederations, sourceData.members]);
 
   // --- MEMBER RANKING CALC ---
   const memberRanking = useMemo(() => {
-    return data.members.map(member => {
-      const conf = data.confederations.find(c => c.id === member.confId);
+    return sourceData.members.map(member => {
+      const conf = sourceData.confederations.find(c => c.id === member.confId);
       if (!conf) return { ...member, points: 0, confName: 'Unknown', confImage: undefined };
       const points = calculateMemberPoints(member, conf.tier);
       return { ...member, points, confName: conf.name, confTier: conf.tier, confImage: conf.imageUrl };
     }).sort((a, b) => b.points - a.points);
-  }, [data.members, data.confederations]);
+  }, [sourceData.members, sourceData.confederations]);
 
-  // --- TOP 100 HISTORY CALC ---
+  // --- TOP 100 HISTORY CALC (Always uses live history data) ---
   const top100Ranking = useMemo(() => {
     const confPoints: Record<string, { points: number, entries: any[], confName: string, confImage?: string }> = {};
 
-    // Initialize with all confs to show 0 if needed
+    // Initialize with all confs to show 0 if needed (Using LIVE confs for names/images in Top 100)
     data.confederations.forEach(c => {
       confPoints[c.id] = { points: 0, entries: [], confName: c.name, confImage: c.imageUrl };
     });
@@ -140,7 +153,7 @@ export const Rankings: React.FC<RankingsProps> = ({ data }) => {
           </div>
         );
       })}
-      {confRanking.length === 0 && <p className="text-center text-gray-500 py-8">Nenhuma confederação ativa cadastrada.</p>}
+      {confRanking.length === 0 && <p className="text-center text-gray-500 py-8">Nenhuma confederação encontrada.</p>}
     </div>
   );
 
@@ -158,7 +171,7 @@ export const Rankings: React.FC<RankingsProps> = ({ data }) => {
               
               {/* Conf Image small */}
               {member.confImage && (
-                <img src={member.confImage} alt="Conf" className="w-8 h-8 md:w-8 md:h-8 flex-shrink-0 rounded-full object-contain bg-black/40 hidden xs:block" />
+                <img src={member.confImage} alt="Conf" className="w-8 h-8 md:w-8 md:h-8 flex-shrink-0 rounded-full object-contain bg-black/40 hidden sm:block" />
               )}
               
               {/* Name Info */}
@@ -181,7 +194,7 @@ export const Rankings: React.FC<RankingsProps> = ({ data }) => {
           </div>
         );
       })}
-       {memberRanking.length === 0 && <p className="text-center text-gray-500 py-8">Nenhum membro ativo.</p>}
+       {memberRanking.length === 0 && <p className="text-center text-gray-500 py-8">Nenhum membro encontrado.</p>}
     </div>
   );
 
@@ -238,6 +251,38 @@ export const Rankings: React.FC<RankingsProps> = ({ data }) => {
         </h2>
         <div className="w-24 h-1 bg-strongs-gold mx-auto rounded-full"></div>
       </div>
+
+      {/* Season Selector */}
+      {activeTab !== 'TOP100' && (
+        <div className="mb-4 flex justify-center">
+            <div className="relative inline-block w-full max-w-xs">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <History size={16} className="text-strongs-gold" />
+                </div>
+                <select 
+                    value={selectedSeasonId}
+                    onChange={(e) => setSelectedSeasonId(e.target.value)}
+                    className="block w-full pl-10 pr-4 py-2 bg-gray-900 border border-gray-700 text-white rounded-lg focus:outline-none focus:border-strongs-gold focus:ring-1 focus:ring-strongs-gold appearance-none font-bold text-center"
+                >
+                    <option value="current">Temporada Atual (Ao Vivo)</option>
+                    {data.archivedSeasons && data.archivedSeasons.slice().reverse().map(season => (
+                        <option key={season.id} value={season.id}>
+                            Arquivo: {season.name}
+                        </option>
+                    ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <span className="text-gray-500 text-xs">▼</span>
+                </div>
+            </div>
+        </div>
+      )}
+
+      {selectedSeasonId !== 'current' && activeTab !== 'TOP100' && (
+          <div className="bg-blue-900/20 border border-blue-500/50 p-2 text-center text-blue-200 text-sm rounded mb-4 animate-pulse">
+              Você está visualizando um histórico arquivado: <strong>{data.archivedSeasons?.find(s => s.id === selectedSeasonId)?.name}</strong>
+          </div>
+      )}
 
       <div className="mb-6 flex justify-center">
         <div className="flex flex-wrap justify-center bg-gray-900 p-1 rounded-lg border border-gray-700 gap-1">

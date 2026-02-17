@@ -21,6 +21,7 @@ const App: React.FC = () => {
 
   // Auth State (Local session only)
   const [currentUser, setCurrentUser] = useState<AppData['currentUser']>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
   
   // Use a ref to track currentUser inside the Firebase callback closure
   // This prevents the user from being logged out when the database updates
@@ -90,6 +91,7 @@ const App: React.FC = () => {
                 news: val.news || [],
                 top100History: val.top100History || [],
                 joinApplications: val.joinApplications || [],
+                archivedSeasons: val.archivedSeasons || [],
                 currentUser: sessionUser // Inject local session
             };
 
@@ -192,9 +194,10 @@ const App: React.FC = () => {
         localStorage.removeItem('strongs_session_uid');
       }
 
+      setLoginError(null);
       setCurrentPage('home');
     } else {
-      alert("Credenciais inválidas");
+      setLoginError("Senha ou usuário incorretos");
     }
   };
 
@@ -617,18 +620,23 @@ const App: React.FC = () => {
 
         {authMode === 'LOGIN' ? (
           <div className="space-y-4">
+            {loginError && (
+              <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded text-sm text-center flex items-center justify-center gap-2">
+                 <AlertTriangle size={16} /> {loginError}
+              </div>
+            )}
             <input 
               className="w-full bg-black/40 border border-gray-600 rounded p-3 text-white focus:border-strongs-gold outline-none transition-colors"
               placeholder="Usuário"
               value={loginUser}
-              onChange={e => setLoginUser(e.target.value)}
+              onChange={e => { setLoginUser(e.target.value); setLoginError(null); }}
             />
             <input 
               type="password"
               className="w-full bg-black/40 border border-gray-600 rounded p-3 text-white focus:border-strongs-gold outline-none transition-colors"
               placeholder="Senha"
               value={loginPass}
-              onChange={e => setLoginPass(e.target.value)}
+              onChange={e => { setLoginPass(e.target.value); setLoginError(null); }}
             />
             
             <div className="flex items-center">
@@ -646,7 +654,7 @@ const App: React.FC = () => {
 
             <Button fullWidth onClick={handleLogin} className="py-3 text-lg">Entrar</Button>
             <p className="text-center text-sm text-gray-500 mt-4">
-              Não tem conta? <button onClick={() => setAuthMode('REGISTER')} className="text-strongs-gold hover:underline">Cadastre-se</button>
+              Não tem conta? <button onClick={() => { setAuthMode('REGISTER'); setLoginError(null); }} className="text-strongs-gold hover:underline">Cadastre-se</button>
             </p>
           </div>
         ) : (
@@ -672,7 +680,7 @@ const App: React.FC = () => {
             />
             <Button fullWidth onClick={handleRegister} className="py-3 text-lg">Criar Conta</Button>
             <p className="text-center text-sm text-gray-500 mt-4">
-              Já tem conta? <button onClick={() => setAuthMode('LOGIN')} className="text-strongs-gold hover:underline">Faça Login</button>
+              Já tem conta? <button onClick={() => { setAuthMode('LOGIN'); setLoginError(null); }} className="text-strongs-gold hover:underline">Faça Login</button>
             </p>
           </div>
         )}

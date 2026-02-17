@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { AppData, User, UserRole, ConfTier, Member, Confederation, GameResult, Attendance, NewsPost, JoinApplication } from '../types';
+import { AppData, User, UserRole, ConfTier, Member, Confederation, GameResult, Attendance, NewsPost, JoinApplication, ArchivedSeason } from '../types';
 import { Button } from './Button';
-import { Trash2, Edit, Plus, UserPlus, ShieldCheck, ChevronDown, ChevronUp, Save, Check, Trophy, XCircle, ImageIcon, ClipboardList, CheckCircle2, Clock, ExternalLink, Power, PowerOff } from 'lucide-react';
+import { Trash2, Edit, Plus, UserPlus, ShieldCheck, ChevronDown, ChevronUp, Save, Check, Trophy, XCircle, ImageIcon, ClipboardList, CheckCircle2, Clock, ExternalLink, Power, PowerOff, Play } from 'lucide-react';
 import ReactQuill from 'react-quill';
 
 interface AdminPanelProps {
@@ -698,12 +698,62 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ data, currentUser, onUpd
   
   // Manager specific access control
   const canViewConfs = ['ADMIN', 'OWNER', 'MOD', 'MANAGER'].includes(currentUser.role);
+  const isOwner = currentUser.role === 'OWNER';
+
+  const handleStartNewSeason = () => {
+    if (!isOwner) return;
+    const seasonName = window.prompt("Digite o NÚMERO ou NOME da temporada encerrada para salvar o histórico:");
+    
+    if (!seasonName) return;
+    if (!window.confirm(`ATENÇÃO: Isso irá zerar a pontuação de TODOS os membros para a nova temporada e salvar os dados atuais no histórico como "${seasonName}".\n\nDeseja continuar?`)) return;
+
+    // 1. Create Archive Snapshot
+    // Deep copy to ensure no reference issues
+    const archive: ArchivedSeason = {
+        id: Date.now().toString(),
+        name: seasonName,
+        date: new Date().toISOString(),
+        members: JSON.parse(JSON.stringify(data.members)),
+        confederations: JSON.parse(JSON.stringify(data.confederations))
+    };
+
+    // 2. Reset Current Members Logic
+    const resetMembers = data.members.map(m => {
+        // Create empty week structure
+        const emptyGames = Array(4).fill(null).map(() => ({ result: 'NONE' as GameResult, attendance: 'NONE' as Attendance }));
+        const emptyWeeks = Array(4).fill(null).map(() => ({ games: [...emptyGames] }));
+        
+        return {
+            ...m,
+            weeks: emptyWeeks
+        };
+    });
+
+    // 3. Save
+    const existingArchives = data.archivedSeasons || [];
+    onUpdateData({
+        archivedSeasons: [...existingArchives, archive],
+        members: resetMembers
+    });
+
+    alert("Temporada salva com sucesso! Pontuações zeradas.");
+  };
 
   return (
     <div className="bg-gray-900/90 backdrop-blur rounded-xl p-6 shadow-2xl">
-      <h2 className="text-3xl font-display font-bold text-white mb-6 flex items-center gap-2">
-        <ShieldCheck className="text-strongs-gold" size={32}/> Painel Administrativo
-      </h2>
+      <div className="flex flex-col md:flex-row justify-between items-center mb-6 border-b border-gray-700 pb-4 gap-4">
+        <h2 className="text-3xl font-display font-bold text-white flex items-center gap-2">
+            <ShieldCheck className="text-strongs-gold" size={32}/> Painel Administrativo
+        </h2>
+        {isOwner && (
+            <Button 
+                onClick={handleStartNewSeason}
+                className="bg-red-900/50 hover:bg-red-800 border border-red-500 text-white flex items-center gap-2 text-sm md:text-base py-2"
+            >
+                <Play size={18} fill="currentColor" /> Iniciar Nova Temporada
+            </Button>
+        )}
+      </div>
 
       {/* Admin Nav */}
       <div className="flex flex-wrap gap-2 mb-8 border-b border-gray-700 pb-4">
