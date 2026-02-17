@@ -133,6 +133,50 @@ export const Layout: React.FC<LayoutProps> = ({
         )}
       </header>
 
+      {/* Marquee Section (Moved to Top) */}
+      <div className="relative border-b border-gray-800 bg-strongs-darker py-3 overflow-hidden z-40">
+        <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-strongs-darker to-transparent z-10 pointer-events-none"></div>
+        <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-strongs-darker to-transparent z-10 pointer-events-none"></div>
+        
+        {/* Single Track Wrapper */}
+        <div className="flex w-full overflow-hidden">
+          <div className="flex items-center space-x-12 animate-scroll w-max pr-12">
+            
+            {/* Set 1: Original */}
+            {activeConfs.length === 0 ? (
+               <span className="text-gray-600 font-display px-4">Sem confederações cadastradas...</span>
+            ) : (
+              activeConfs.map((conf, i) => (
+                <div key={`orig-${conf.id}-${i}`} className="flex items-center space-x-3 opacity-70 hover:opacity-100 transition-opacity flex-shrink-0 cursor-default">
+                   {conf.imageUrl ? (
+                     <img src={conf.imageUrl} className="w-10 h-10 rounded-full border-2 border-gray-700 bg-black/50 object-contain" alt={conf.name} />
+                   ) : (
+                     <div className="w-10 h-10 rounded-full border-2 border-gray-700 bg-gray-800 flex items-center justify-center">
+                       <Circle size={20} className="text-gray-500" />
+                     </div>
+                   )}
+                   <span className="font-display text-lg text-white uppercase tracking-wider">{conf.name}</span>
+                </div>
+              ))
+            )}
+
+            {/* Set 2: Duplicate for seamless loop */}
+            {activeConfs.length > 0 && activeConfs.map((conf, i) => (
+              <div key={`dup-${conf.id}-${i}`} className="flex items-center space-x-3 opacity-70 hover:opacity-100 transition-opacity flex-shrink-0 cursor-default">
+                 {conf.imageUrl ? (
+                   <img src={conf.imageUrl} className="w-10 h-10 rounded-full border-2 border-gray-700 bg-black/50 object-contain" alt={conf.name} />
+                 ) : (
+                   <div className="w-10 h-10 rounded-full border-2 border-gray-700 bg-gray-800 flex items-center justify-center">
+                     <Circle size={20} className="text-gray-500" />
+                   </div>
+                 )}
+                 <span className="font-display text-lg text-white uppercase tracking-wider">{conf.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Main Content */}
       <main className="flex-grow container mx-auto px-4 py-8 relative z-10">
         {children}
@@ -149,50 +193,6 @@ export const Layout: React.FC<LayoutProps> = ({
           Junte-se a nós!
         </span>
       </button>
-
-      {/* Marquee Section */}
-      <div className="relative border-t border-gray-800 bg-strongs-darker py-4 overflow-hidden z-20">
-        <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-strongs-darker to-transparent z-10 pointer-events-none"></div>
-        <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-strongs-darker to-transparent z-10 pointer-events-none"></div>
-        
-        {/* Single Track Wrapper */}
-        <div className="flex w-full overflow-hidden">
-          <div className="flex items-center space-x-12 animate-scroll w-max pr-12">
-            
-            {/* Set 1: Original */}
-            {activeConfs.length === 0 ? (
-               <span className="text-gray-600 font-display px-4">Sem confederações cadastradas...</span>
-            ) : (
-              activeConfs.map((conf, i) => (
-                <div key={`orig-${conf.id}-${i}`} className="flex items-center space-x-3 opacity-70 hover:opacity-100 transition-opacity flex-shrink-0">
-                   {conf.imageUrl ? (
-                     <img src={conf.imageUrl} className="w-12 h-12 rounded-full border-2 border-gray-700 bg-black/50 object-contain" alt={conf.name} />
-                   ) : (
-                     <div className="w-12 h-12 rounded-full border-2 border-gray-700 bg-gray-800 flex items-center justify-center">
-                       <Circle size={24} className="text-gray-500" />
-                     </div>
-                   )}
-                   <span className="font-display text-xl text-white uppercase tracking-wider">{conf.name}</span>
-                </div>
-              ))
-            )}
-
-            {/* Set 2: Duplicate for seamless loop */}
-            {activeConfs.length > 0 && activeConfs.map((conf, i) => (
-              <div key={`dup-${conf.id}-${i}`} className="flex items-center space-x-3 opacity-70 hover:opacity-100 transition-opacity flex-shrink-0">
-                 {conf.imageUrl ? (
-                   <img src={conf.imageUrl} className="w-12 h-12 rounded-full border-2 border-gray-700 bg-black/50 object-contain" alt={conf.name} />
-                 ) : (
-                   <div className="w-12 h-12 rounded-full border-2 border-gray-700 bg-gray-800 flex items-center justify-center">
-                     <Circle size={24} className="text-gray-500" />
-                   </div>
-                 )}
-                 <span className="font-display text-xl text-white uppercase tracking-wider">{conf.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
 
       {/* Footer */}
       <footer className="bg-strongs-darker border-t border-gray-800 py-6 text-center text-gray-500 text-sm relative z-10">
