@@ -1,30 +1,30 @@
 import { initializeApp } from "firebase/app";
 import { getDatabase, Database } from "firebase/database";
 
-// --- INSTRUÇÕES ---
-// 1. Vá no console do Firebase > Configurações do Projeto
-// 2. Role até "Seus aplicativos" e copie as chaves do objeto firebaseConfig
-// 3. Cole os valores abaixo:
+// --- INSTRUÇÕES PARA O USUÁRIO ---
+// 1. Copie o objeto 'firebaseConfig' do seu Console do Firebase (Configurações do Projeto).
+// 2. Substitua os valores abaixo pelos seus novos valores.
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCTdnAaGBdrF5GiOY46XiD1ItAaksDRzhM",
-  authDomain: "strongs-brazil-bddea.firebaseapp.com",
-  databaseURL: "https://strongs-brazil-bddea-default-rtdb.firebaseio.com",
-  projectId: "strongs-brazil-bddea",
-  storageBucket: "strongs-brazil-bddea.firebasestorage.app",
-  messagingSenderId: "447630113773",
-  appId: "1:447630113773:web:8cdef57f44ae0933ab05e4",
-  measurementId: "G-VD7QWV7DY7"
+  apiKey: "COLE_SUA_NOVA_API_KEY_AQUI",
+  authDomain: "SEU_NOVO_ID.firebaseapp.com",
+  databaseURL: "https://SEU_NOVO_ID-default-rtdb.firebaseio.com",
+  projectId: "SEU_NOVO_ID",
+  storageBucket: "SEU_NOVO_ID.firebasestorage.app",
+  messagingSenderId: "SEUS_NUMEROS",
+  appId: "1:SEUS_NUMEROS:web:SEUS_CODIGOS",
+  measurementId: "G-SEU_CODIGO"
 };
 
-// Verificamos se o usuário já configurou o arquivo
+// Verificamos se o usuário já configurou o arquivo para evitar erros de conexão
+// Se a apiKey ainda for o texto padrão, consideramos não configurado.
 export const isConfigured = firebaseConfig.apiKey !== "COLE_SUA_NOVA_API_KEY_AQUI" && 
-                            !firebaseConfig.databaseURL.includes("SEU_NOVO_PROJETO");
+                            !firebaseConfig.databaseURL.includes("SEU_NOVO_ID");
 
 let app;
 let db: Database | undefined;
 
-// Só tentamos conectar se estiver configurado, para evitar erros no console
+// Só inicializamos se as chaves tiverem sido trocadas
 if (isConfigured) {
   try {
     app = initializeApp(firebaseConfig);
