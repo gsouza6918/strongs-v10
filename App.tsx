@@ -54,16 +54,18 @@ const App: React.FC = () => {
 
   /**
    * DEEP SANITIZATION & CONVERSION
-   * This function serves two purposes:
-   * 1. Converts the input (which might be an Object/Map from Firebase or an Array) into a valid Array for the UI.
-   * 2. Ensures the deep structure of 'weeks' and 'games' exists for every member, preventing crashes.
+   * This function is the cornerstone of data integrity.
+   * 1. It accepts input from Firebase which can be:
+   *    - Array (Legacy data)
+   *    - Object/Map (New 'membersConf' structure)
+   *    - Null/Undefined
+   * 2. It converts everything to a clean `Member[]` array for the UI.
+   * 3. It ensures every member has the deep structure (weeks -> games) initialized.
    */
   const sanitizeMembers = (input: any): Member[] => {
       if (!input) return [];
       
       // 1. Normalize Input to Array
-      // Firebase might return an Object map: { "id1": {...}, "id2": {...} }
-      // Or an Array (legacy data): [{...}, {...}]
       let list: any[] = [];
       if (Array.isArray(input)) {
           list = input.filter(i => i !== null && i !== undefined);
@@ -73,12 +75,11 @@ const App: React.FC = () => {
 
       // 2. Map and Fix Structure
       return list.map((m: any) => {
-          // Fallback ID if missing
-          if (!m.id) {
-             m.id = Math.random().toString(36).substr(2, 9);
-          }
+          // Fallback ID if missing (should not happen in prod but safety first)
+          const id = m.id || Math.random().toString(36).substr(2, 9);
 
-          // Handle weeks: Access keys 0,1,2,3 explicitly to handle object-based sparse arrays
+          // Handle weeks: We use a fixed array [0,1,2,3] to ensure we always have 4 weeks
+          // We look up the week in the input data (which might be an array or object key)
           const rawWeeks = m.weeks || {}; 
           
           const sanitizedWeeks = [0, 1, 2, 3].map(weekIdx => {
@@ -98,6 +99,7 @@ const App: React.FC = () => {
 
           return {
               ...m,
+              id, // Ensure ID is present
               weeks: sanitizedWeeks
           };
       });
@@ -143,17 +145,19 @@ const App: React.FC = () => {
           const sessionUser = currentUserRef.current;
 
           if (val) {
-            // --- CRITICAL FIX: READ FROM 'membersConf' ---
-            // Prioritize reading from the new 'membersConf' object structure.
-            // Fallback to old 'members' array only if 'membersConf' is empty (migration phase).
+            // --- CRITICAL PERSISTENCE LOGIC ---
+            // 1. Try to read from 'membersConf' (New Object Structure)
+            // 2. Fallback to 'members' (Old Array Structure) for migration
             const rawMembers = val.membersConf || val.members;
+            
+            // 3. Convert whatever we got into a clean Array for the UI
             const membersArray = sanitizeMembers(rawMembers);
 
             const safeData: AppData = {
                 ...val,
                 users: ensureArray(val.users),
                 confederations: ensureArray(val.confederations),
-                members: membersArray, // UI always works with Array
+                members: membersArray, // UI state always receives Array
                 news: ensureArray(val.news),
                 top100History: ensureArray(val.top100History),
                 joinApplications: ensureArray(val.joinApplications),
@@ -180,20 +184,22 @@ const App: React.FC = () => {
 
             setData(safeData);
           } else {
-            // If Firebase is empty (first run), load default data and upload it
+            // --- INITIALIZATION FOR EMPTY DB ---
             const defaultData = loadData();
-            // Ensure default data is also sanitized before saving first time
+            // Ensure default data is sanitized
             defaultData.members = sanitizeMembers(defaultData.members);
             
-            // Initial save logic: Create membersConf
+            // Prepare initial payload using the NEW structure
             const initialPayload = { ...defaultData };
-            const membersMap: Record<string, Member> = {};
-            defaultData.members.forEach(m => membersMap[m.id] = m);
             
-            // @ts-ignore - altering type for firebase save
+            // Create membersConf Map
+            const membersMap: Record<string, Member> = {};
+            defaultData.members.forEach(m => { if(m.id) membersMap[m.id] = m; });
+            
+            // @ts-ignore - Dynamic key assignment
             initialPayload.membersConf = membersMap;
-            // @ts-ignore
-            delete initialPayload.members; // Clean old key
+            // @ts-ignore - Delete old key
+            delete initialPayload.members;
 
             set(dataRef, initialPayload).catch(err => {
                 console.error("Erro ao criar dados iniciais:", err);
@@ -227,7 +233,7 @@ const App: React.FC = () => {
   const updateData = (newData: Partial<AppData>) => {
     if (!data) return;
 
-    // 1. Update Local State immediately (Keep members as Array for React UI)
+    // 1. Update Local State immediately (Keep members as Array for React UI responsiveness)
     const updatedData = { ...data, ...newData };
     setData(updatedData);
 
@@ -242,12 +248,14 @@ const App: React.FC = () => {
     }
 
     // 2. Prepare Payload for Firebase
+    // We strip currentUser as it is local state
     const { currentUser: _, ...dbPayload } = updatedData;
     
-    // --- CRITICAL FIX: SAVE TO 'membersConf' (Map) ---
-    // Convert the current array state to a map (Object) indexed by ID
-    // This prevents sparse array issues and ensures data persistence
+    // --- CRITICAL FIX: ARRAY TO MAP CONVERSION ---
+    // Instead of saving 'members' as an array (which causes sparse array bugs on delete),
+    // We convert it to a Dictionary/Map keyed by member ID.
     const membersArray = dbPayload.members || [];
+    // Ensure we are processing clean data
     const cleanMembersList = sanitizeMembers(membersArray);
     
     const membersMap: Record<string, Member> = {};
@@ -257,12 +265,14 @@ const App: React.FC = () => {
         }
     });
 
-    console.log(`[Persistência] Salvando ${Object.keys(membersMap).length} membros na lista 'membersConf'.`);
+    console.log(`[Persistência] Convertendo ${cleanMembersList.length} membros (Array) para 'membersConf' (Map).`);
 
     const cleanPayload = {
       ...dbPayload,
-      membersConf: membersMap, // New Persisted List (Object Map)
-      members: null, // Explicitly nullify the old array list to clean up DB
+      membersConf: membersMap, // SAVE AS MAP
+      members: null, // DELETE OLD ARRAY NODE to prevent conflicts
+      
+      // Ensure other lists are arrays
       users: ensureArray(dbPayload.users),
       confederations: ensureArray(dbPayload.confederations),
       news: ensureArray(dbPayload.news),

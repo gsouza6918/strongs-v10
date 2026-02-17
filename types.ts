@@ -97,8 +97,8 @@ export interface ArchivedSeason {
 export interface AppData {
   users: User[];
   confederations: Confederation[];
-  members: Member[];
-  membersConf?: Record<string, Member>; // Nova estrutura de persistência
+  members: Member[]; // UI uses Array
+  membersConf?: Record<string, Member>; // Persistence uses Object Map
   news: NewsPost[];
   top100History: Top100Entry[];
   joinApplications: JoinApplication[];
