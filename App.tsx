@@ -143,10 +143,11 @@ const App: React.FC = () => {
           const sessionUser = currentUserRef.current;
 
           if (val) {
-            // CRITICAL FIX: Sanitize Members Deeply
-            // Here 'val.members' might come as an Object (Map) from Firebase. 
-            // sanitizeMembers converts it back to Array for the AppData type.
-            const membersArray = sanitizeMembers(val.members);
+            // --- CRITICAL FIX: READ FROM 'membersConf' ---
+            // Prioritize reading from the new 'membersConf' object structure.
+            // Fallback to old 'members' array only if 'membersConf' is empty (migration phase).
+            const rawMembers = val.membersConf || val.members;
+            const membersArray = sanitizeMembers(rawMembers);
 
             const safeData: AppData = {
                 ...val,
@@ -184,13 +185,15 @@ const App: React.FC = () => {
             // Ensure default data is also sanitized before saving first time
             defaultData.members = sanitizeMembers(defaultData.members);
             
-            // Initial save will use the new updateData logic conceptually via set
-            // Converting default members array to object map for initial save
+            // Initial save logic: Create membersConf
             const initialPayload = { ...defaultData };
             const membersMap: Record<string, Member> = {};
             defaultData.members.forEach(m => membersMap[m.id] = m);
+            
             // @ts-ignore - altering type for firebase save
-            initialPayload.members = membersMap;
+            initialPayload.membersConf = membersMap;
+            // @ts-ignore
+            delete initialPayload.members; // Clean old key
 
             set(dataRef, initialPayload).catch(err => {
                 console.error("Erro ao criar dados iniciais:", err);
@@ -241,11 +244,10 @@ const App: React.FC = () => {
     // 2. Prepare Payload for Firebase
     const { currentUser: _, ...dbPayload } = updatedData;
     
-    // CRITICAL FIX: CONVERT MEMBERS ARRAY TO OBJECT MAP
-    // This prevents sparse array issues in Firebase.
-    // Logic: Key = Member ID, Value = Member Object
+    // --- CRITICAL FIX: SAVE TO 'membersConf' (Map) ---
+    // Convert the current array state to a map (Object) indexed by ID
+    // This prevents sparse array issues and ensures data persistence
     const membersArray = dbPayload.members || [];
-    // Ensure we are working with clean data before mapping
     const cleanMembersList = sanitizeMembers(membersArray);
     
     const membersMap: Record<string, Member> = {};
@@ -255,11 +257,12 @@ const App: React.FC = () => {
         }
     });
 
-    console.log(`[Persistência] Salvando ${Object.keys(membersMap).length} membros como Map.`);
+    console.log(`[Persistência] Salvando ${Object.keys(membersMap).length} membros na lista 'membersConf'.`);
 
     const cleanPayload = {
       ...dbPayload,
-      members: membersMap, // Save as Object Map!
+      membersConf: membersMap, // New Persisted List (Object Map)
+      members: null, // Explicitly nullify the old array list to clean up DB
       users: ensureArray(dbPayload.users),
       confederations: ensureArray(dbPayload.confederations),
       news: ensureArray(dbPayload.news),

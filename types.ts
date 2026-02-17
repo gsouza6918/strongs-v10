@@ -98,6 +98,7 @@ export interface AppData {
   users: User[];
   confederations: Confederation[];
   members: Member[];
+  membersConf?: Record<string, Member>; // Nova estrutura de persistência
   news: NewsPost[];
   top100History: Top100Entry[];
   joinApplications: JoinApplication[];
