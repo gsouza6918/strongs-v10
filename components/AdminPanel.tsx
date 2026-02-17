@@ -1,7 +1,8 @@
+
 import React, { useState, useMemo } from 'react';
 import { AppData, User, UserRole, ConfTier, Member, Confederation, GameResult, Attendance, NewsPost, JoinApplication, ArchivedSeason, Top100Entry } from '../types';
 import { Button } from './Button';
-import { Trash2, Edit, Plus, UserPlus, ShieldCheck, ChevronDown, ChevronUp, Save, Check, Trophy, XCircle, ImageIcon, ClipboardList, CheckCircle2, Clock, ExternalLink, Power, PowerOff, Play, History, Download, RefreshCcw, AlertOctagon, X } from 'lucide-react';
+import { Trash2, Edit, Plus, UserPlus, ShieldCheck, ChevronDown, ChevronUp, Save, Check, Trophy, XCircle, ImageIcon, ClipboardList, CheckCircle2, Clock, ExternalLink, Power, PowerOff, Play, History, Download, RefreshCcw, AlertOctagon, X, Ban, Activity, Percent } from 'lucide-react';
 import ReactQuill from 'react-quill';
 import { loadData } from '../services/storage'; // Import defaults
 
@@ -101,8 +102,53 @@ const ConfManagement: React.FC<{
     const [newMemberTeam, setNewMemberTeam] = useState('');
     const [newMemberLinkUser, setNewMemberLinkUser] = useState('');
 
-    // LOCAL EDITS STATE
+    // Member INFO Editing State
+    const [editingMemberInfoId, setEditingMemberInfoId] = useState<string | null>(null);
+    const [editMemberForm, setEditMemberForm] = useState({ name: '', teamName: '', linkedUserId: '' });
+
+    // LOCAL SCORES EDITS STATE
     const [localMemberEdits, setLocalMemberEdits] = useState<Record<string, Member>>({});
+
+    // --- Helper for Stats ---
+    const getMemberStats = (member: Member) => {
+        let gamesPlayed = 0;
+        let pointsEarned = 0;
+        let maxPointsPossible = 0;
+
+        let presenceOpportunities = 0;
+        let presentCount = 0;
+        let noTrainCount = 0;
+
+        member.weeks.forEach(week => {
+            week.games.forEach(game => {
+                // Performance Stats
+                if (game.result !== 'NONE') {
+                    gamesPlayed++;
+                    maxPointsPossible += 3;
+                    if (game.result === 'WIN') pointsEarned += 3;
+                    if (game.result === 'DRAW') pointsEarned += 1;
+                }
+
+                // Attendance Stats
+                if (game.attendance !== 'NONE') {
+                    presenceOpportunities++;
+                    if (game.attendance === 'PRESENT') presentCount++;
+                    if (game.attendance === 'NO_TRAIN') noTrainCount++;
+                }
+            });
+        });
+
+        // Calculations (Start at 100% if no data)
+        const performance = gamesPlayed > 0 
+            ? Math.round((pointsEarned / maxPointsPossible) * 100) 
+            : 100;
+        
+        const attendance = presenceOpportunities > 0
+            ? Math.round((presentCount / presenceOpportunities) * 100)
+            : 100;
+
+        return { performance, attendance, noTrainCount };
+    };
 
     const handleSaveConf = () => {
       if (!newConfName) return;
@@ -139,7 +185,6 @@ const ConfManagement: React.FC<{
         setNewConfTier(conf.tier);
         setNewConfActive(conf.active !== false); // Handle legacy undefined as true
         setEditingConfId(conf.id);
-        // Collapse others or scroll to top? Just set state.
     };
 
     const cancelEdit = () => {
@@ -152,14 +197,9 @@ const ConfManagement: React.FC<{
 
     const handleDeleteConf = (id: string) => {
       if(!window.confirm("Tem certeza? Isso apagará a confederação e seus membros associados.")) return;
-      
-      // Delete Conf List Item
       onUpdateConfs(data.confederations.filter(c => c.id !== id));
-      
-      // Delete All Members in that Conf
       const membersToDelete = data.members.filter(m => m.confId === id);
       membersToDelete.forEach(m => onDeleteMember(m.id));
-
       if (editingConfId === id) cancelEdit();
     };
 
@@ -174,7 +214,6 @@ const ConfManagement: React.FC<{
         return;
       }
 
-      // Init empty weeks structure robustly
       const emptyGames = [
           { result: 'NONE' as GameResult, attendance: 'NONE' as Attendance },
           { result: 'NONE' as GameResult, attendance: 'NONE' as Attendance },
@@ -199,10 +238,8 @@ const ConfManagement: React.FC<{
         weeks: emptyWeeks as any
       };
 
-      // 1. Save Member (Granular)
       onSaveMember(newMember);
 
-      // 2. Update Linked User (if any)
       if (newMemberLinkUser) {
         const updatedUsers = data.users.map(u => 
           u.id === newMemberLinkUser && u.role === 'USER' 
@@ -217,13 +254,59 @@ const ConfManagement: React.FC<{
       setNewMemberLinkUser('');
     };
 
+    // --- Member Info Edit Functions ---
+    const startEditMemberInfo = (member: Member) => {
+        setEditingMemberInfoId(member.id);
+        setEditMemberForm({
+            name: member.name,
+            teamName: member.teamName,
+            linkedUserId: member.linkedUserId || ''
+        });
+    };
+
+    const cancelEditMemberInfo = () => {
+        setEditingMemberInfoId(null);
+        setEditMemberForm({ name: '', teamName: '', linkedUserId: '' });
+    };
+
+    const saveMemberInfo = (originalMember: Member) => {
+        // 1. Update Member Object
+        const updatedMember: Member = {
+            ...originalMember,
+            name: editMemberForm.name,
+            teamName: editMemberForm.teamName,
+            linkedUserId: editMemberForm.linkedUserId || undefined
+        };
+
+        onSaveMember(updatedMember);
+
+        // 2. Handle User Linking Logic (Update Users Array)
+        // If the linked user changed, we need to update the User objects
+        if (originalMember.linkedUserId !== editMemberForm.linkedUserId) {
+            let usersCopy = [...data.users];
+
+            // Remove link from old user
+            if (originalMember.linkedUserId) {
+                usersCopy = usersCopy.map(u => 
+                    u.id === originalMember.linkedUserId ? { ...u, linkedMemberId: undefined } : u
+                );
+            }
+
+            // Add link to new user
+            if (editMemberForm.linkedUserId) {
+                usersCopy = usersCopy.map(u => 
+                    u.id === editMemberForm.linkedUserId ? { ...u, linkedMemberId: originalMember.id } : u
+                );
+            }
+            onUpdateUsers(usersCopy);
+        }
+
+        setEditingMemberInfoId(null);
+    };
+
     const toggleManager = (member: Member) => {
        const updatedMember = { ...member, isManager: !member.isManager };
-       
-       // 1. Save Member (Granular)
        onSaveMember(updatedMember);
-
-       // 2. Update User role if linked
        if (member.linkedUserId) {
          const updatedUsers = data.users.map(u => {
            if (u.id === member.linkedUserId) {
@@ -240,56 +323,29 @@ const ConfManagement: React.FC<{
 
     // Updates LOCAL state only
     const updateLocalScore = (member: Member, weekIdx: number, gameIdx: number, field: 'result' | 'attendance', value: string) => {
-      // Get current state from local edits OR original data
       const currentMemberState = localMemberEdits[member.id] || member;
-
-      // Safe deep copy of weeks to avoid mutation and handle potential undefineds
       const newWeeks = currentMemberState.weeks ? [...currentMemberState.weeks] : [];
-      
-      // Ensure the week object exists
-      if(!newWeeks[weekIdx]) {
-         newWeeks[weekIdx] = { games: Array(4).fill({result: 'NONE', attendance: 'NONE'}) };
-      }
-
-      // Safe copy of games
+      if(!newWeeks[weekIdx]) newWeeks[weekIdx] = { games: Array(4).fill({result: 'NONE', attendance: 'NONE'}) };
       const weekGames = newWeeks[weekIdx].games ? [...newWeeks[weekIdx].games] : [];
+      if (!weekGames[gameIdx]) weekGames[gameIdx] = { result: 'NONE', attendance: 'NONE' };
       
-      // Ensure the game object exists
-      if (!weekGames[gameIdx]) {
-        weekGames[gameIdx] = { result: 'NONE', attendance: 'NONE' };
-      }
-
-      // Update the specific field
       weekGames[gameIdx] = { ...weekGames[gameIdx], [field]: value };
-      
-      // Re-assign games to week
       newWeeks[weekIdx] = { ...newWeeks[weekIdx], games: weekGames };
 
       const updatedMember = { ...currentMemberState, weeks: newWeeks };
-      
-      setLocalMemberEdits(prev => ({
-          ...prev,
-          [member.id]: updatedMember
-      }));
+      setLocalMemberEdits(prev => ({ ...prev, [member.id]: updatedMember }));
     };
 
-    // Commits LOCAL state to FIREBASE (Granular)
     const saveMemberChanges = (memberId: string) => {
         const editedMember = localMemberEdits[memberId];
         if (!editedMember) return;
-
-        // Granular Save
         onSaveMember(editedMember);
-
-        // Clear local edit for this member (optional, but good for UI consistency)
         const newLocalEdits = { ...localMemberEdits };
         delete newLocalEdits[memberId];
         setLocalMemberEdits(newLocalEdits);
     };
 
     const availableUsers = data.users.filter(u => !u.linkedMemberId);
-
-    // Sort confederations: Active first, then Inactive
     const sortedConfs = [...data.confederations].sort((a, b) => {
         if (a.active === b.active) return 0;
         return a.active ? -1 : 1;
@@ -297,7 +353,6 @@ const ConfManagement: React.FC<{
 
     return (
       <div className="space-y-6">
-        {/* Only show creation/edit panel for Admins/Mods */}
         {canManageConfs && (
             <div className="bg-gray-800 p-4 rounded border border-gray-700">
               <div className="flex justify-between items-center mb-2">
@@ -321,12 +376,7 @@ const ConfManagement: React.FC<{
                   </select>
                   <div className="flex items-center space-x-2 bg-gray-900 border border-gray-600 rounded px-3">
                      <label className="text-gray-300 text-sm font-bold cursor-pointer select-none flex items-center">
-                        <input 
-                            type="checkbox" 
-                            checked={newConfActive} 
-                            onChange={e => setNewConfActive(e.target.checked)}
-                            className="mr-2 h-4 w-4 accent-strongs-gold"
-                        />
+                        <input type="checkbox" checked={newConfActive} onChange={e => setNewConfActive(e.target.checked)} className="mr-2 h-4 w-4 accent-strongs-gold"/>
                         {newConfActive ? <span className="text-green-400">Ativa</span> : <span className="text-red-400">Inativa</span>}
                      </label>
                   </div>
@@ -334,12 +384,7 @@ const ConfManagement: React.FC<{
                 <div className="flex flex-col md:flex-row gap-2 items-center">
                   <div className="flex-grow relative w-full">
                     <ImageIcon className="absolute left-2 top-2.5 text-gray-500" size={16}/>
-                    <input 
-                      className="bg-gray-900 border border-gray-600 rounded p-2 pl-8 text-white w-full"
-                      placeholder="URL da Imagem/Logo (Opcional)"
-                      value={newConfImage}
-                      onChange={(e) => setNewConfImage(e.target.value)}
-                    />
+                    <input className="bg-gray-900 border border-gray-600 rounded p-2 pl-8 text-white w-full" placeholder="URL da Imagem/Logo (Opcional)" value={newConfImage} onChange={(e) => setNewConfImage(e.target.value)} />
                   </div>
                   <Button onClick={handleSaveConf} className="md:w-32">
                       {editingConfId ? <><Save size={16} className="inline mr-1"/> Salvar</> : 'Criar'}
@@ -360,18 +405,12 @@ const ConfManagement: React.FC<{
 
             return (
               <div key={conf.id} className={`bg-gray-900/80 border rounded-lg overflow-hidden ${isEditing ? 'border-strongs-gold ring-1 ring-strongs-gold' : 'border-gray-700'} ${!isActive ? 'opacity-60 grayscale' : ''}`}>
-                <div 
-                  className="p-4 flex justify-between items-center cursor-pointer bg-gray-800 hover:bg-gray-750"
-                  onClick={() => setExpandedConf(isExpanded ? null : conf.id)}
-                >
+                <div className="p-4 flex justify-between items-center cursor-pointer bg-gray-800 hover:bg-gray-750" onClick={() => setExpandedConf(isExpanded ? null : conf.id)}>
                   <div className="flex items-center gap-4">
-                    {conf.imageUrl && (
-                      <img src={conf.imageUrl} alt={conf.name} className="w-10 h-10 object-contain rounded-full bg-gray-900 border border-gray-600"/>
-                    )}
+                    {conf.imageUrl && <img src={conf.imageUrl} alt={conf.name} className="w-10 h-10 object-contain rounded-full bg-gray-900 border border-gray-600"/>}
                     <div>
                       <h3 className="text-xl font-display font-bold text-white flex items-center gap-2">
-                          {conf.name} 
-                          <span className="text-xs text-gray-400 font-sans bg-gray-700 px-1 rounded">{conf.tier}</span>
+                          {conf.name} <span className="text-xs text-gray-400 font-sans bg-gray-700 px-1 rounded">{conf.tier}</span>
                           {!isActive && <span className="text-xs bg-red-900 text-red-200 px-2 py-0.5 rounded flex items-center gap-1"><PowerOff size={10}/> Inativa</span>}
                       </h3>
                       <p className="text-xs text-gray-400">{members.length}/6 Membros</p>
@@ -391,9 +430,7 @@ const ConfManagement: React.FC<{
                 {isExpanded && (
                   <div className="p-4 border-t border-gray-700 space-y-6">
                     {!isActive && (
-                        <div className="bg-red-900/20 border border-red-500/50 p-2 rounded text-center text-red-300 text-sm mb-4">
-                            Esta confederação está inativa e não pode receber novos membros.
-                        </div>
+                        <div className="bg-red-900/20 border border-red-500/50 p-2 rounded text-center text-red-300 text-sm mb-4">Esta confederação está inativa.</div>
                     )}
                     {canManageConfs && members.length < 6 && isActive && (
                       <div className="bg-gray-800/50 p-3 rounded border border-gray-700/50">
@@ -412,21 +449,88 @@ const ConfManagement: React.FC<{
 
                     <div className="space-y-4">
                       {members.map(memberData => {
-                        // Decide whether to show original data or local edited data
                         const member = localMemberEdits[memberData.id] || memberData;
                         const hasUnsavedChanges = !!localMemberEdits[memberData.id];
+                        const isEditingInfo = editingMemberInfoId === member.id;
+                        const stats = getMemberStats(member); // Calculate Stats
 
                         return (
                         <div key={member.id} className={`border rounded bg-black/20 p-3 ${hasUnsavedChanges ? 'border-yellow-500/50 shadow-[0_0_10px_rgba(234,179,8,0.1)]' : 'border-gray-700'}`}>
-                          <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-700/50">
-                            <div>
-                               <div className="flex items-center gap-2">
-                                  <span className="font-bold text-white text-lg">{member.name}</span>
-                                  <span className="text-gray-400 text-sm">({member.teamName})</span>
-                                  {member.isManager && <span className="bg-blue-900 text-blue-200 text-xs px-1 rounded">GESTOR</span>}
-                               </div>
-                               {/* SAVE BUTTON FOR THIS MEMBER */}
-                               {hasEditAccess && (
+                          
+                          {/* HEADER DO CARD DO MEMBRO */}
+                          <div className="flex justify-between items-start mb-3 pb-2 border-b border-gray-700/50">
+                            <div className="flex-grow">
+                               {isEditingInfo ? (
+                                   // --- FORMULÁRIO DE EDIÇÃO ---
+                                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
+                                       <input 
+                                         value={editMemberForm.name} 
+                                         onChange={e => setEditMemberForm({...editMemberForm, name: e.target.value})}
+                                         className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-white text-sm"
+                                         placeholder="Nome"
+                                       />
+                                       <input 
+                                         value={editMemberForm.teamName} 
+                                         onChange={e => setEditMemberForm({...editMemberForm, teamName: e.target.value})}
+                                         className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-white text-sm"
+                                         placeholder="Time"
+                                       />
+                                       <select 
+                                         value={editMemberForm.linkedUserId}
+                                         onChange={e => setEditMemberForm({...editMemberForm, linkedUserId: e.target.value})}
+                                         className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-gray-300 text-sm"
+                                       >
+                                           <option value="">Sem Vínculo</option>
+                                           {availableUsers.map(u => <option key={u.id} value={u.id}>{u.username}</option>)}
+                                           {/* Inclui o usuário atual se já estiver vinculado, para não sumir da lista */}
+                                           {member.linkedUserId && !availableUsers.find(u => u.id === member.linkedUserId) && (
+                                               <option value={member.linkedUserId}>
+                                                   {data.users.find(u => u.id === member.linkedUserId)?.username || 'Desconhecido'}
+                                               </option>
+                                           )}
+                                       </select>
+                                   </div>
+                               ) : (
+                                   // --- EXIBIÇÃO NORMAL COM STATS ---
+                                   <div>
+                                       <div className="flex items-center gap-2">
+                                          <span className="font-bold text-white text-lg">{member.name}</span>
+                                          <span className="text-gray-400 text-sm">({member.teamName})</span>
+                                          {member.isManager && <span className="bg-blue-900 text-blue-200 text-xs px-1 rounded">GESTOR</span>}
+                                          {canManageConfs && (
+                                              <button onClick={() => startEditMemberInfo(member)} className="text-gray-500 hover:text-strongs-gold ml-2" title="Editar Dados Cadastrais">
+                                                  <Edit size={14} />
+                                              </button>
+                                          )}
+                                       </div>
+                                       
+                                       {/* BADGES DE ESTATÍSTICAS */}
+                                       <div className="flex gap-3 mt-1 text-[10px] md:text-xs font-bold uppercase tracking-wider">
+                                           <div className="flex items-center gap-1 text-blue-400 bg-blue-900/20 px-1.5 py-0.5 rounded border border-blue-900/50">
+                                               <Activity size={12}/> Apr: {stats.performance}%
+                                           </div>
+                                           <div className="flex items-center gap-1 text-green-400 bg-green-900/20 px-1.5 py-0.5 rounded border border-green-900/50">
+                                               <CheckCircle2 size={12}/> Pres: {stats.attendance}%
+                                           </div>
+                                           {stats.noTrainCount > 0 && (
+                                               <div className="flex items-center gap-1 text-red-400 bg-red-900/20 px-1.5 py-0.5 rounded border border-red-900/50">
+                                                   <Ban size={12}/> N/Treino: {stats.noTrainCount}
+                                               </div>
+                                           )}
+                                       </div>
+                                   </div>
+                               )}
+                               
+                               {/* BOTÕES DE AÇÃO (SALVAR EDIÇÃO) */}
+                               {isEditingInfo && (
+                                   <div className="flex gap-2 mt-2">
+                                       <Button variant="secondary" onClick={() => saveMemberInfo(member)} className="text-xs py-1 px-3">Salvar Dados</Button>
+                                       <Button variant="ghost" onClick={cancelEditMemberInfo} className="text-xs py-1 px-3">Cancelar</Button>
+                                   </div>
+                               )}
+
+                               {/* SAVE BUTTON FOR SCORES (SEPARATE) */}
+                               {hasEditAccess && !isEditingInfo && (
                                    <Button 
                                     onClick={() => saveMemberChanges(member.id)}
                                     disabled={!hasUnsavedChanges}
@@ -434,31 +538,32 @@ const ConfManagement: React.FC<{
                                     className={`text-xs py-1 mt-2 flex items-center gap-1 ${!hasUnsavedChanges ? 'opacity-50' : ''}`}
                                    >
                                      <Save size={14} /> 
-                                     {hasUnsavedChanges ? 'Salvar Alterações' : 'Alterações Salvas'}
+                                     {hasUnsavedChanges ? 'Salvar Pontuações' : 'Pontuações Salvas'}
                                    </Button>
                                )}
                             </div>
-                            <div className="flex space-x-2">
-                               {canManageConfs && (
-                                   <Button 
-                                    variant="ghost" 
-                                    className="text-xs py-0.5 px-2"
-                                    onClick={() => toggleManager(member)}
-                                   >
-                                     {member.isManager ? 'Remover Gestor' : 'Tornar Gestor'}
-                                   </Button>
-                               )}
-                               {canManageConfs && (
-                                 <button onClick={() => {
-                                   if(window.confirm('Remover membro?')) {
-                                     onDeleteMember(member.id);
-                                   }
-                                 }} className="text-red-500 hover:text-red-400"><Trash2 size={16}/></button>
-                               )}
-                            </div>
+                            
+                            {/* BOTÕES DE GESTÃO LATERAL */}
+                            {!isEditingInfo && (
+                                <div className="flex space-x-2">
+                                   {canManageConfs && (
+                                       <Button 
+                                        variant="ghost" 
+                                        className="text-xs py-0.5 px-2"
+                                        onClick={() => toggleManager(member)}
+                                       >
+                                         {member.isManager ? 'Remover Gestor' : 'Tornar Gestor'}
+                                       </Button>
+                                   )}
+                                   {canManageConfs && (
+                                     <button onClick={() => { if(window.confirm('Remover membro?')) onDeleteMember(member.id); }} className="text-red-500 hover:text-red-400"><Trash2 size={16}/></button>
+                                   )}
+                                </div>
+                            )}
                           </div>
 
-                          {hasEditAccess && (
+                          {/* TABELA DE JOGOS */}
+                          {hasEditAccess && !isEditingInfo && (
                             <div className="overflow-x-auto">
                               <table className="w-full text-xs text-gray-300">
                                 <thead>
