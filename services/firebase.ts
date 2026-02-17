@@ -1,7 +1,5 @@
 import { initializeApp } from "firebase/app";
-import type { FirebaseApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
-import type { Database } from "firebase/database";
 
 // Configuração do Firebase
 const firebaseConfig = {
@@ -18,8 +16,8 @@ const firebaseConfig = {
 export const isConfigured = firebaseConfig.apiKey !== "COLE_SUA_NOVA_API_KEY_AQUI" && 
                             !firebaseConfig.databaseURL.includes("SEU_NOVO_ID");
 
-let app: FirebaseApp | undefined;
-let db: Database | undefined;
+let app: any;
+let db: any;
 
 if (isConfigured) {
   try {

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { AppData, User, UserRole, ConfTier, Member, Confederation, GameResult, Attendance, NewsPost, JoinApplication, ArchivedSeason } from '../types';
+import { AppData, User, UserRole, ConfTier, Member, Confederation, GameResult, Attendance, NewsPost, JoinApplication, ArchivedSeason, Top100Entry } from '../types';
 import { Button } from './Button';
 import { Trash2, Edit, Plus, UserPlus, ShieldCheck, ChevronDown, ChevronUp, Save, Check, Trophy, XCircle, ImageIcon, ClipboardList, CheckCircle2, Clock, ExternalLink, Power, PowerOff, Play, History, Download, RefreshCcw, AlertOctagon } from 'lucide-react';
 import ReactQuill from 'react-quill';
@@ -8,17 +8,25 @@ import { loadData } from '../services/storage'; // Import defaults
 interface AdminPanelProps {
   data: AppData;
   currentUser: User;
-  onUpdateData: (newData: Partial<AppData>) => void;
+  onSaveMember: (member: Member) => void;
+  onDeleteMember: (memberId: string) => void;
+  onUpdateUsers: (users: User[]) => void;
+  onUpdateConfs: (confs: Confederation[]) => void;
+  onUpdateNews: (news: NewsPost[]) => void;
+  onUpdateTop100: (history: Top100Entry[]) => void;
+  onUpdateJoinApps: (apps: JoinApplication[]) => void;
+  onUpdateSeasons: (seasons: ArchivedSeason[]) => void;
+  onResetDB: (fullData: AppData) => void;
 }
 
 // --- EXTRACTED COMPONENTS ---
 
-const UserManagement: React.FC<{data: AppData, currentUser: User, onUpdateData: (d: Partial<AppData>) => void}> = ({data, currentUser, onUpdateData}) => {
+const UserManagement: React.FC<{data: AppData, currentUser: User, onUpdateUsers: (u: User[]) => void}> = ({data, currentUser, onUpdateUsers}) => {
     const canManageUsers = ['ADMIN', 'OWNER', 'MOD'].includes(currentUser.role);
 
     const handleRoleChange = (userId: string, newRole: UserRole) => {
         const updatedUsers = data.users.map(u => u.id === userId ? { ...u, role: newRole } : u);
-        onUpdateData({ users: updatedUsers });
+        onUpdateUsers(updatedUsers);
     };
 
     return (
@@ -71,7 +79,14 @@ const UserManagement: React.FC<{data: AppData, currentUser: User, onUpdateData: 
     );
 };
 
-const ConfManagement: React.FC<{data: AppData, currentUser: User, onUpdateData: (d: Partial<AppData>) => void}> = ({data, currentUser, onUpdateData}) => {
+const ConfManagement: React.FC<{
+    data: AppData, 
+    currentUser: User, 
+    onSaveMember: (m: Member) => void,
+    onDeleteMember: (id: string) => void,
+    onUpdateConfs: (c: Confederation[]) => void,
+    onUpdateUsers: (u: User[]) => void
+}> = ({data, currentUser, onSaveMember, onDeleteMember, onUpdateConfs, onUpdateUsers}) => {
     const canManageConfs = ['ADMIN', 'OWNER', 'MOD'].includes(currentUser.role);
 
     const [newConfName, setNewConfName] = useState('');
@@ -99,7 +114,7 @@ const ConfManagement: React.FC<{data: AppData, currentUser: User, onUpdateData: 
               ? { ...c, name: newConfName, tier: newConfTier, imageUrl: newConfImage || undefined, active: newConfActive }
               : c
           );
-          onUpdateData({ confederations: updatedConfs });
+          onUpdateConfs(updatedConfs);
           setEditingConfId(null);
       } else {
           // Create new
@@ -110,7 +125,7 @@ const ConfManagement: React.FC<{data: AppData, currentUser: User, onUpdateData: 
             imageUrl: newConfImage || undefined,
             active: newConfActive
           };
-          onUpdateData({ confederations: [...data.confederations, newConf] });
+          onUpdateConfs([...data.confederations, newConf]);
       }
       setNewConfName('');
       setNewConfImage('');
@@ -136,11 +151,15 @@ const ConfManagement: React.FC<{data: AppData, currentUser: User, onUpdateData: 
     };
 
     const handleDeleteConf = (id: string) => {
-      if(!window.confirm("Tem certeza? Isso apagará todos os membros desta confederação.")) return;
-      onUpdateData({ 
-        confederations: data.confederations.filter(c => c.id !== id),
-        members: data.members.filter(m => m.confId !== id)
-      });
+      if(!window.confirm("Tem certeza? Isso apagará a confederação e seus membros associados.")) return;
+      
+      // Delete Conf List Item
+      onUpdateConfs(data.confederations.filter(c => c.id !== id));
+      
+      // Delete All Members in that Conf
+      const membersToDelete = data.members.filter(m => m.confId === id);
+      membersToDelete.forEach(m => onDeleteMember(m.id));
+
       if (editingConfId === id) cancelEdit();
     };
 
@@ -180,33 +199,33 @@ const ConfManagement: React.FC<{data: AppData, currentUser: User, onUpdateData: 
         weeks: emptyWeeks as any
       };
 
-      // If linked user, update user role to MEMBER if they are just USER
-      let updatedUsers = data.users;
+      // 1. Save Member (Granular)
+      onSaveMember(newMember);
+
+      // 2. Update Linked User (if any)
       if (newMemberLinkUser) {
-        updatedUsers = data.users.map(u => 
+        const updatedUsers = data.users.map(u => 
           u.id === newMemberLinkUser && u.role === 'USER' 
             ? { ...u, role: UserRole.MEMBER, linkedMemberId: newMember.id } 
             : u.id === newMemberLinkUser ? { ...u, linkedMemberId: newMember.id } : u
         );
+        onUpdateUsers(updatedUsers);
       }
-
-      onUpdateData({ 
-        members: [...data.members, newMember],
-        users: updatedUsers
-      });
       
       setNewMemberName('');
       setNewMemberTeam('');
       setNewMemberLinkUser('');
     };
 
-    const toggleManager = (memberId: string) => {
-       const updatedMembers = data.members.map(m => m.id === memberId ? { ...m, isManager: !m.isManager } : m);
-       // Also update User role if linked
-       const member = data.members.find(m => m.id === memberId);
-       let updatedUsers = data.users;
-       if (member && member.linkedUserId) {
-         updatedUsers = data.users.map(u => {
+    const toggleManager = (member: Member) => {
+       const updatedMember = { ...member, isManager: !member.isManager };
+       
+       // 1. Save Member (Granular)
+       onSaveMember(updatedMember);
+
+       // 2. Update User role if linked
+       if (member.linkedUserId) {
+         const updatedUsers = data.users.map(u => {
            if (u.id === member.linkedUserId) {
              const newRole = !member.isManager ? UserRole.MANAGER : UserRole.MEMBER;
              if ((!member.isManager && u.role === UserRole.MEMBER) || (member.isManager && u.role === UserRole.MANAGER)) {
@@ -215,9 +234,8 @@ const ConfManagement: React.FC<{data: AppData, currentUser: User, onUpdateData: 
            }
            return u;
          });
+         onUpdateUsers(updatedUsers);
        }
-
-       onUpdateData({ members: updatedMembers, users: updatedUsers });
     };
 
     // Updates LOCAL state only
@@ -255,14 +273,13 @@ const ConfManagement: React.FC<{data: AppData, currentUser: User, onUpdateData: 
       }));
     };
 
-    // Commits LOCAL state to FIREBASE
+    // Commits LOCAL state to FIREBASE (Granular)
     const saveMemberChanges = (memberId: string) => {
         const editedMember = localMemberEdits[memberId];
         if (!editedMember) return;
 
-        // Merge into global members array
-        const updatedMembers = data.members.map(m => m.id === memberId ? editedMember : m);
-        onUpdateData({ members: updatedMembers });
+        // Granular Save
+        onSaveMember(editedMember);
 
         // Clear local edit for this member (optional, but good for UI consistency)
         const newLocalEdits = { ...localMemberEdits };
@@ -426,7 +443,7 @@ const ConfManagement: React.FC<{data: AppData, currentUser: User, onUpdateData: 
                                    <Button 
                                     variant="ghost" 
                                     className="text-xs py-0.5 px-2"
-                                    onClick={() => toggleManager(member.id)}
+                                    onClick={() => toggleManager(member)}
                                    >
                                      {member.isManager ? 'Remover Gestor' : 'Tornar Gestor'}
                                    </Button>
@@ -434,7 +451,7 @@ const ConfManagement: React.FC<{data: AppData, currentUser: User, onUpdateData: 
                                {canManageConfs && (
                                  <button onClick={() => {
                                    if(window.confirm('Remover membro?')) {
-                                     onUpdateData({ members: data.members.filter(m => m.id !== member.id) });
+                                     onDeleteMember(member.id);
                                    }
                                  }} className="text-red-500 hover:text-red-400"><Trash2 size={16}/></button>
                                )}
@@ -505,7 +522,7 @@ const ConfManagement: React.FC<{data: AppData, currentUser: User, onUpdateData: 
     );
 };
 
-const NewsManagement: React.FC<{data: AppData, onUpdateData: (d: Partial<AppData>) => void}> = ({data, onUpdateData}) => {
+const NewsManagement: React.FC<{data: AppData, onUpdateNews: (n: NewsPost[]) => void}> = ({data, onUpdateNews}) => {
     const [title, setTitle] = useState('');
     const [subject, setSubject] = useState('');
     const [image, setImage] = useState('');
@@ -534,7 +551,7 @@ const NewsManagement: React.FC<{data: AppData, onUpdateData: (d: Partial<AppData
             coverImage: image || 'https://picsum.photos/800/400',
             content
         } : n);
-        onUpdateData({ news: updatedNews });
+        onUpdateNews(updatedNews);
         alert("Notícia atualizada!");
       } else {
         const post: NewsPost = {
@@ -545,7 +562,7 @@ const NewsManagement: React.FC<{data: AppData, onUpdateData: (d: Partial<AppData
           content,
           date: new Date().toISOString()
         };
-        onUpdateData({ news: [post, ...data.news] });
+        onUpdateNews([post, ...data.news]);
         alert("Notícia publicada!");
       }
       resetForm();
@@ -566,7 +583,7 @@ const NewsManagement: React.FC<{data: AppData, onUpdateData: (d: Partial<AppData
 
     const deleteNews = (id: string) => {
         if(window.confirm('Apagar notícia?')) {
-            onUpdateData({ news: data.news.filter(n => n.id !== id) });
+            onUpdateNews(data.news.filter(n => n.id !== id));
             if (editingId === id) resetForm();
         }
     };
@@ -622,7 +639,7 @@ const NewsManagement: React.FC<{data: AppData, onUpdateData: (d: Partial<AppData
     );
 };
 
-const Top100Management: React.FC<{data: AppData, onUpdateData: (d: Partial<AppData>) => void}> = ({data, onUpdateData}) => {
+const Top100Management: React.FC<{data: AppData, onUpdateTop100: (h: Top100Entry[]) => void}> = ({data, onUpdateTop100}) => {
     const [selectedConf, setSelectedConf] = useState('');
     const [season, setSeason] = useState('');
     const [rank, setRank] = useState<number>(1);
@@ -642,7 +659,7 @@ const Top100Management: React.FC<{data: AppData, onUpdateData: (d: Partial<AppDa
         dateAdded: new Date().toISOString()
       };
       
-      onUpdateData({ top100History: [...data.top100History, entry] });
+      onUpdateTop100([...data.top100History, entry]);
       setSeason('');
       setRank(1);
     };
@@ -687,7 +704,7 @@ const Top100Management: React.FC<{data: AppData, onUpdateData: (d: Partial<AppDa
     );
 };
 
-const JoinRequestsManagement: React.FC<{data: AppData, onUpdateData: (d: Partial<AppData>) => void}> = ({data, onUpdateData}) => {
+const JoinRequestsManagement: React.FC<{data: AppData, onUpdateJoinApps: (a: JoinApplication[]) => void}> = ({data, onUpdateJoinApps}) => {
     const pendingApps = data.joinApplications?.filter(a => a.status === 'PENDING') || [];
     const answeredApps = data.joinApplications?.filter(a => a.status === 'ANSWERED') || [];
 
@@ -695,7 +712,7 @@ const JoinRequestsManagement: React.FC<{data: AppData, onUpdateData: (d: Partial
         const updatedApps = data.joinApplications.map(app => 
             app.id === id ? { ...app, status: app.status === 'PENDING' ? 'ANSWERED' : 'PENDING' as any } : app
         );
-        onUpdateData({ joinApplications: updatedApps });
+        onUpdateJoinApps(updatedApps);
     };
 
     const renderList = (apps: JoinApplication[], isPending: boolean) => (
@@ -758,11 +775,11 @@ const JoinRequestsManagement: React.FC<{data: AppData, onUpdateData: (d: Partial
     );
 };
 
-const SeasonManagement: React.FC<{data: AppData, onUpdateData: (d: Partial<AppData>) => void}> = ({data, onUpdateData}) => {
+const SeasonManagement: React.FC<{data: AppData, onUpdateSeasons: (s: ArchivedSeason[]) => void}> = ({data, onUpdateSeasons}) => {
     const handleDelete = (id: string) => {
         if(window.confirm("Tem certeza que deseja excluir permanentemente este histórico de temporada?")) {
             const updatedSeasons = (data.archivedSeasons || []).filter(s => s.id !== id);
-            onUpdateData({ archivedSeasons: updatedSeasons });
+            onUpdateSeasons(updatedSeasons);
         }
     };
 
@@ -799,7 +816,11 @@ const SeasonManagement: React.FC<{data: AppData, onUpdateData: (d: Partial<AppDa
     );
 };
 
-export const AdminPanel: React.FC<AdminPanelProps> = ({ data, currentUser, onUpdateData }) => {
+export const AdminPanel: React.FC<AdminPanelProps> = ({ 
+    data, currentUser, 
+    onSaveMember, onDeleteMember, onUpdateUsers, onUpdateConfs, 
+    onUpdateNews, onUpdateTop100, onUpdateJoinApps, onUpdateSeasons, onResetDB 
+}) => {
   const [activeSection, setActiveSection] = useState<'USERS' | 'CONFS' | 'NEWS' | 'TOP100' | 'REQUESTS' | 'SEASONS'>('USERS');
 
   const canManageConfs = ['ADMIN', 'OWNER', 'MOD'].includes(currentUser.role);
@@ -830,23 +851,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ data, currentUser, onUpd
         confederations: JSON.parse(JSON.stringify(data.confederations))
     };
 
-    // 2. Reset Current Members Logic
-    const resetMembers = data.members.map(m => {
+    // 2. Archive the Season
+    const existingArchives = data.archivedSeasons || [];
+    onUpdateSeasons([...existingArchives, archive]);
+
+    // 3. Reset Current Members Logic (Granular updates for each member)
+    data.members.forEach(m => {
         // Create empty week structure
         const emptyGames = Array(4).fill(null).map(() => ({ result: 'NONE' as GameResult, attendance: 'NONE' as Attendance }));
         const emptyWeeks = Array(4).fill(null).map(() => ({ games: [...emptyGames] }));
         
-        return {
+        const resetMember = {
             ...m,
             weeks: emptyWeeks
         };
-    });
-
-    // 3. Save
-    const existingArchives = data.archivedSeasons || [];
-    onUpdateData({
-        archivedSeasons: [...existingArchives, archive],
-        members: resetMembers
+        // Save each reset member individually
+        onSaveMember(resetMember as any);
     });
 
     alert("Temporada salva com sucesso! Pontuações zeradas.");
@@ -858,8 +878,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ data, currentUser, onUpd
       if (!window.confirm("Confirmação final: Todos os dados serão perdidos. Continuar?")) return;
 
       const defaultData = loadData(); // Carrega os dados padrão definidos no arquivo
-      // Força a atualização completa substituindo tudo
-      onUpdateData(defaultData);
+      onResetDB(defaultData);
       alert("Banco de dados redefinido para o padrão. Atualize a página se necessário.");
   };
 
@@ -925,12 +944,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ data, currentUser, onUpd
 
       {/* Content Area */}
       <div>
-        {activeSection === 'USERS' && canManageUsers && <UserManagement data={data} currentUser={currentUser} onUpdateData={onUpdateData} />}
-        {activeSection === 'CONFS' && canViewConfs && <ConfManagement data={data} currentUser={currentUser} onUpdateData={onUpdateData} />}
-        {activeSection === 'NEWS' && canManageNews && <NewsManagement data={data} onUpdateData={onUpdateData} />}
-        {activeSection === 'TOP100' && canManageTop100 && <Top100Management data={data} onUpdateData={onUpdateData} />}
-        {activeSection === 'REQUESTS' && canManageRequests && <JoinRequestsManagement data={data} onUpdateData={onUpdateData} />}
-        {activeSection === 'SEASONS' && canManageSeasons && <SeasonManagement data={data} onUpdateData={onUpdateData} />}
+        {activeSection === 'USERS' && canManageUsers && <UserManagement data={data} currentUser={currentUser} onUpdateUsers={onUpdateUsers} />}
+        {activeSection === 'CONFS' && canViewConfs && (
+            <ConfManagement 
+                data={data} 
+                currentUser={currentUser} 
+                onSaveMember={onSaveMember}
+                onDeleteMember={onDeleteMember}
+                onUpdateConfs={onUpdateConfs}
+                onUpdateUsers={onUpdateUsers}
+            />
+        )}
+        {activeSection === 'NEWS' && canManageNews && <NewsManagement data={data} onUpdateNews={onUpdateNews} />}
+        {activeSection === 'TOP100' && canManageTop100 && <Top100Management data={data} onUpdateTop100={onUpdateTop100} />}
+        {activeSection === 'REQUESTS' && canManageRequests && <JoinRequestsManagement data={data} onUpdateJoinApps={onUpdateJoinApps} />}
+        {activeSection === 'SEASONS' && canManageSeasons && <SeasonManagement data={data} onUpdateSeasons={onUpdateSeasons} />}
       </div>
     </div>
   );

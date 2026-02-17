@@ -3,13 +3,13 @@ import { Layout } from './components/Layout';
 import { Rankings } from './components/Rankings';
 import { AdminPanel } from './components/AdminPanel';
 import { Button } from './components/Button';
-import { AppData, UserRole, ConfTier, JoinApplication, Member, GameResult, Attendance } from './types';
+import { AppData, UserRole, ConfTier, JoinApplication, Member, GameResult, Attendance, Confederation, User, NewsPost, Top100Entry, ArchivedSeason } from './types';
 import { loadData } from './services/storage'; // We keep this just for DEFAULT_DATA structure
 import { Trophy, ChevronRight, Lock, Users, Shield, UserPlus, Send, Briefcase, Coins, Percent, Smartphone, Star, Loader2, AlertTriangle, CheckSquare, RefreshCw } from 'lucide-react';
 
 // Firebase Imports
 import { db, isConfigured } from './services/firebase';
-import { ref, onValue, set } from "firebase/database";
+import { ref, onValue, set, remove, update } from "firebase/database";
 
 const App: React.FC = () => {
   // Initialize with minimal state, data will come from Firebase
@@ -25,7 +25,6 @@ const App: React.FC = () => {
   const [loginError, setLoginError] = useState<string | null>(null);
   
   // Use a ref to track currentUser inside the Firebase callback closure
-  // This prevents the user from being logged out when the database updates
   const currentUserRef = useRef(currentUser);
 
   // Sync ref with state
@@ -42,30 +41,18 @@ const App: React.FC = () => {
   const [registerPass, setRegisterPass] = useState('');
   const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
 
-  // Helper to force arrays even if Firebase returns Objects (happens with sparse arrays or deletions)
+  // Helper to force arrays
   const ensureArray = (data: any) => {
     if (!data) return [];
     if (Array.isArray(data)) {
         return data.filter(item => item !== null && item !== undefined);
     }
-    // If it's an object (Firebase behavior for sparse arrays), convert to array
     return Object.values(data).filter(item => item !== null && item !== undefined);
   };
 
-  /**
-   * DEEP SANITIZATION & CONVERSION
-   * This function is the cornerstone of data integrity.
-   * 1. It accepts input from Firebase which can be:
-   *    - Array (Legacy data)
-   *    - Object/Map (New 'membersConf' structure)
-   *    - Null/Undefined
-   * 2. It converts everything to a clean `Member[]` array for the UI.
-   * 3. It ensures every member has the deep structure (weeks -> games) initialized.
-   */
   const sanitizeMembers = (input: any): Member[] => {
       if (!input) return [];
       
-      // 1. Normalize Input to Array
       let list: any[] = [];
       if (Array.isArray(input)) {
           list = input.filter(i => i !== null && i !== undefined);
@@ -73,13 +60,8 @@ const App: React.FC = () => {
           list = Object.values(input).filter(i => i !== null && i !== undefined);
       }
 
-      // 2. Map and Fix Structure
       return list.map((m: any) => {
-          // Fallback ID if missing (should not happen in prod but safety first)
           const id = m.id || Math.random().toString(36).substr(2, 9);
-
-          // Handle weeks: We use a fixed array [0,1,2,3] to ensure we always have 4 weeks
-          // We look up the week in the input data (which might be an array or object key)
           const rawWeeks = m.weeks || {}; 
           
           const sanitizedWeeks = [0, 1, 2, 3].map(weekIdx => {
@@ -99,25 +81,18 @@ const App: React.FC = () => {
 
           return {
               ...m,
-              id, // Ensure ID is present
+              id,
               weeks: sanitizedWeeks
           };
       });
   };
 
-  // 1. Connect to Firebase on Mount
+  // 1. Connect to Firebase on Mount (READ ONLY)
   useEffect(() => {
     let unsubscribe = () => {};
 
-    // Safety check for configuration
-    if (!isConfigured) {
-      setErrorMsg("O Firebase não está configurado. Verifique o arquivo services/firebase.ts.");
-      setLoading(false);
-      return;
-    }
-
-    if (!db) {
-      setErrorMsg("Falha ao inicializar o banco de dados. Verifique as chaves no arquivo services/firebase.ts.");
+    if (!isConfigured || !db) {
+      setErrorMsg("O Firebase não está configurado ou inicializado.");
       setLoading(false);
       return;
     }
@@ -125,12 +100,11 @@ const App: React.FC = () => {
     try {
         const dataRef = ref(db, 'strongs_db');
         
-        // Timeout protection
         const timeoutId = setTimeout(() => {
             if (loading) { 
                 setLoading((currentLoading) => {
                     if (currentLoading) {
-                        setErrorMsg("A conexão com o banco de dados está demorando muito. Verifique se o 'Realtime Database' está ativado e as Regras de Segurança estão em modo 'Teste'.");
+                        setErrorMsg("A conexão com o banco de dados está demorando muito.");
                         return false; 
                     }
                     return currentLoading;
@@ -138,34 +112,30 @@ const App: React.FC = () => {
             }
         }, 15000); 
 
-        // Listen for changes in the database
+        // READ LISTENER
         unsubscribe = onValue(dataRef, (snapshot) => {
-          clearTimeout(timeoutId); // Success, clear timeout
+          clearTimeout(timeoutId);
           const val = snapshot.val();
           const sessionUser = currentUserRef.current;
 
           if (val) {
-            // --- CRITICAL PERSISTENCE LOGIC ---
-            // 1. Try to read from 'membersConf' (New Object Structure)
-            // 2. Fallback to 'members' (Old Array Structure) for migration
+            // Priority Read: membersConf (Map) -> fallback to members (Array)
             const rawMembers = val.membersConf || val.members;
-            
-            // 3. Convert whatever we got into a clean Array for the UI
             const membersArray = sanitizeMembers(rawMembers);
 
             const safeData: AppData = {
                 ...val,
                 users: ensureArray(val.users),
                 confederations: ensureArray(val.confederations),
-                members: membersArray, // UI state always receives Array
+                members: membersArray, 
                 news: ensureArray(val.news),
                 top100History: ensureArray(val.top100History),
                 joinApplications: ensureArray(val.joinApplications),
                 archivedSeasons: ensureArray(val.archivedSeasons),
-                currentUser: sessionUser // Inject local session
+                currentUser: sessionUser 
             };
 
-            // --- SESSION RESTORATION LOGIC ---
+            // Session Restoration
             if (sessionUser) {
                 const freshUser = safeData.users.find(u => u.id === sessionUser.id);
                 if (freshUser) safeData.currentUser = freshUser;
@@ -184,39 +154,28 @@ const App: React.FC = () => {
 
             setData(safeData);
           } else {
-            // --- INITIALIZATION FOR EMPTY DB ---
+            // First Run / Empty DB
             const defaultData = loadData();
-            // Ensure default data is sanitized
             defaultData.members = sanitizeMembers(defaultData.members);
             
-            // Prepare initial payload using the NEW structure
             const initialPayload = { ...defaultData };
-            
-            // Create membersConf Map
             const membersMap: Record<string, Member> = {};
             defaultData.members.forEach(m => { if(m.id) membersMap[m.id] = m; });
             
-            // @ts-ignore - Dynamic key assignment
+            // @ts-ignore
             initialPayload.membersConf = membersMap;
-            // @ts-ignore - Delete old key
+            // @ts-ignore
             delete initialPayload.members;
 
-            set(dataRef, initialPayload).catch(err => {
-                console.error("Erro ao criar dados iniciais:", err);
-                setErrorMsg("Erro ao criar dados iniciais: " + err.message);
-            });
+            set(dataRef, initialPayload);
             setData(defaultData);
           }
           setLoading(false);
-          setErrorMsg(null); // Clear any previous errors
+          setErrorMsg(null);
         }, (error) => {
           clearTimeout(timeoutId);
           console.error("Firebase read error:", error);
-          let msg = error.message;
-          if (msg.includes("permission_denied")) msg = "Permissão negada. Configure as Regras do Realtime Database para 'modo de teste' (leitura/escrita pública).";
-          if (msg.includes("Client is offline")) msg = "Você está offline.";
-          
-          setErrorMsg(`Erro de conexão: ${msg}`);
+          setErrorMsg(`Erro de conexão: ${error.message}`);
           setLoading(false);
         });
 
@@ -227,84 +186,88 @@ const App: React.FC = () => {
     }
 
     return () => unsubscribe();
-  }, []); // Run once on mount
+  }, []);
 
-  // 2. Helper to update Data (Updates Local State + Sends to Firebase)
-  const updateData = (newData: Partial<AppData>) => {
-    if (!data) return;
+  // --- GRANULAR WRITE OPERATIONS ---
 
-    // 1. Update Local State immediately (Keep members as Array for React UI responsiveness)
-    const updatedData = { ...data, ...newData };
-    setData(updatedData);
-
-    // Update Session User if users list changed
-    if (newData.users && currentUser) {
-       const updatedSessionUser = newData.users.find(u => u.id === currentUser.id);
-       if (updatedSessionUser) setCurrentUser(updatedSessionUser);
-    }
-    
-    if (newData.currentUser !== undefined) {
-       setCurrentUser(newData.currentUser);
-    }
-
-    // 2. Prepare Payload for Firebase
-    // We strip currentUser as it is local state
-    const { currentUser: _, ...dbPayload } = updatedData;
-    
-    // --- CRITICAL FIX: ARRAY TO MAP CONVERSION ---
-    // Instead of saving 'members' as an array (which causes sparse array bugs on delete),
-    // We convert it to a Dictionary/Map keyed by member ID.
-    const membersArray = dbPayload.members || [];
-    // Ensure we are processing clean data
-    const cleanMembersList = sanitizeMembers(membersArray);
-    
-    const membersMap: Record<string, Member> = {};
-    cleanMembersList.forEach(m => {
-        if (m && m.id) {
-            membersMap[m.id] = m;
-        }
-    });
-
-    console.log(`[Persistência] Convertendo ${cleanMembersList.length} membros (Array) para 'membersConf' (Map).`);
-
-    const cleanPayload = {
-      ...dbPayload,
-      membersConf: membersMap, // SAVE AS MAP
-      members: null, // DELETE OLD ARRAY NODE to prevent conflicts
-      
-      // Ensure other lists are arrays
-      users: ensureArray(dbPayload.users),
-      confederations: ensureArray(dbPayload.confederations),
-      news: ensureArray(dbPayload.news),
-      top100History: ensureArray(dbPayload.top100History),
-      joinApplications: ensureArray(dbPayload.joinApplications),
-      archivedSeasons: ensureArray(dbPayload.archivedSeasons),
-    };
-
-    // Save to Firebase ONLY if configured
-    if (isConfigured && db) {
-      set(ref(db, 'strongs_db'), cleanPayload)
-        .then(() => setSaveError(null))
-        .catch(err => {
-            console.error("Erro ao salvar no Firebase:", err);
-            setSaveError("Falha ao salvar alterações. Verifique sua conexão.");
-        });
-    }
+  // 1. Members (Granular on membersConf/{id})
+  const handleSaveMember = async (member: Member) => {
+      if (!db || !isConfigured) return;
+      try {
+          console.log(`Saving member ${member.id} to membersConf...`);
+          await set(ref(db, `strongs_db/membersConf/${member.id}`), member);
+          setSaveError(null);
+      } catch (err: any) {
+          console.error("Error saving member:", err);
+          setSaveError("Erro ao salvar membro: " + err.message);
+      }
   };
+
+  const handleDeleteMember = async (memberId: string) => {
+      if (!db || !isConfigured) return;
+      try {
+          console.log(`Deleting member ${memberId}...`);
+          await remove(ref(db, `strongs_db/membersConf/${memberId}`));
+          setSaveError(null);
+      } catch (err: any) {
+          console.error("Error deleting member:", err);
+          setSaveError("Erro ao excluir membro: " + err.message);
+      }
+  };
+
+  // 2. Lists (Write to specific list node, avoiding root write)
+  // For these arrays, we overwrite the list node. Ideally, these would be maps too, 
+  // but for now, isolating them prevents member data loss.
+
+  const handleUpdateUsers = async (users: User[]) => {
+      if (!db) return;
+      await set(ref(db, 'strongs_db/users'), users);
+  };
+
+  const handleUpdateConfs = async (confs: Confederation[]) => {
+      if (!db) return;
+      await set(ref(db, 'strongs_db/confederations'), confs);
+  };
+
+  const handleUpdateNews = async (news: NewsPost[]) => {
+      if (!db) return;
+      await set(ref(db, 'strongs_db/news'), news);
+  };
+
+  const handleUpdateTop100 = async (history: Top100Entry[]) => {
+      if (!db) return;
+      await set(ref(db, 'strongs_db/top100History'), history);
+  };
+
+  const handleUpdateJoinApps = async (apps: JoinApplication[]) => {
+      if (!db) return;
+      await set(ref(db, 'strongs_db/joinApplications'), apps);
+  };
+
+  const handleUpdateSeasons = async (seasons: ArchivedSeason[]) => {
+      if (!db) return;
+      await set(ref(db, 'strongs_db/archivedSeasons'), seasons);
+  };
+
+  // Special case: Resetting DB (Dangerous, keeps root write but only for owner)
+  const handleResetDB = async (fullData: AppData) => {
+      if (!db) return;
+      await set(ref(db, 'strongs_db'), fullData);
+  };
+
+  // --- AUTH HANDLERS ---
 
   const handleLogin = () => {
     if (!data) return;
     const user = data.users.find(u => u.username === loginUser.trim() && u.password === loginPass);
     if (user) {
-      updateData({ currentUser: user });
-      
-      // Handle "Keep me logged in"
+      // Local update only for session
+      setCurrentUser(user);
       if (keepConnected) {
         localStorage.setItem('strongs_session_uid', user.id);
       } else {
         localStorage.removeItem('strongs_session_uid');
       }
-
       setLoginError(null);
       setCurrentPage('home');
     } else {
@@ -322,19 +285,29 @@ const App: React.FC = () => {
       name: registerName,
       username: registerUser,
       password: registerPass,
-      role: UserRole.USER // Default role
+      role: UserRole.USER 
     };
 
-    // Auto-login on register
-    updateData({ users: [...data.users, newUser], currentUser: newUser });
+    // Granular update
+    const updatedUsers = [...data.users, newUser];
+    handleUpdateUsers(updatedUsers);
     
+    // Auto login
+    setCurrentUser(newUser);
     setCurrentPage('home');
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('strongs_session_uid'); // Clear persistence
-    updateData({ currentUser: null });
+    localStorage.removeItem('strongs_session_uid');
+    setCurrentUser(null);
     setCurrentPage('login');
+  };
+
+  const handleJoinRequest = (app: JoinApplication) => {
+      // Logic from JoinUsPage moved here to use granular update
+      if (!data) return;
+      const updatedApps = [...data.joinApplications, app];
+      handleUpdateJoinApps(updatedApps);
   };
 
   // --- PAGES ---
@@ -420,9 +393,7 @@ const App: React.FC = () => {
         date: new Date().toISOString()
       };
 
-      // Ensure joinApplications exists (legacy data protection)
-      const currentApps = data?.joinApplications || [];
-      updateData({ joinApplications: [...currentApps, app] });
+      handleJoinRequest(app);
       setSubmitted(true);
     };
 
@@ -895,7 +866,21 @@ const App: React.FC = () => {
       {currentPage === 'confederations' && <ConfederationsPage />}
       {currentPage === 'rankings' && <Rankings data={data} />}
       {currentPage === 'join-us' && <JoinUsPage />}
-      {currentPage === 'admin' && currentUser && <AdminPanel data={data} currentUser={currentUser} onUpdateData={updateData} />}
+      {currentPage === 'admin' && currentUser && (
+          <AdminPanel 
+            data={data} 
+            currentUser={currentUser} 
+            onSaveMember={handleSaveMember}
+            onDeleteMember={handleDeleteMember}
+            onUpdateUsers={handleUpdateUsers}
+            onUpdateConfs={handleUpdateConfs}
+            onUpdateNews={handleUpdateNews}
+            onUpdateTop100={handleUpdateTop100}
+            onUpdateJoinApps={handleUpdateJoinApps}
+            onUpdateSeasons={handleUpdateSeasons}
+            onResetDB={handleResetDB}
+          />
+      )}
       {currentPage === 'login' && LoginPage()}
       {currentPage === 'news-detail' && NewsDetailPage()}
     </Layout>
