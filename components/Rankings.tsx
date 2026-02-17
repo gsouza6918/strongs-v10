@@ -236,7 +236,12 @@ export const Rankings: React.FC<RankingsProps> = ({ data }) => {
               <div className="bg-black/30 rounded p-2 text-sm border-t border-white/5">
                 <h4 className="text-gray-400 uppercase text-[10px] md:text-xs font-bold mb-2 pb-1">Histórico de Conquistas</h4>
                 <div className="max-h-40 overflow-y-auto space-y-1 pr-2 custom-scrollbar">
-                  {item.entries.sort((a, b) => parseInt(b.season) - parseInt(a.season)).map((entry: any, i: number) => {
+                  {item.entries.sort((a, b) => {
+                      // Primary: Rank (Low number = Higher Rank) -> Ascending
+                      if (a.rank !== b.rank) return a.rank - b.rank;
+                      // Secondary: Season (High number = Recent) -> Descending
+                      return parseInt(b.season) - parseInt(a.season);
+                  }).map((entry: any, i: number) => {
                     const rowEffect = getEntryEffect(entry.rank);
                     return (
                       <div key={i} className={`flex justify-between text-xs p-1.5 rounded transition-all hover:bg-white/5 ${rowEffect}`}>
