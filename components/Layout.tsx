@@ -20,6 +20,7 @@ export const Layout: React.FC<LayoutProps> = ({
   confederations
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   // Filter only active confederations for display in marquee
   const activeConfs = confederations.filter(c => c.active !== false);
@@ -52,11 +53,18 @@ export const Layout: React.FC<LayoutProps> = ({
             className="flex items-center space-x-3 cursor-pointer group"
             onClick={() => onNavigate('home')}
           >
-             <img 
-               src="/logo.png" 
-               alt="Strongs Brazil Logo" 
-               className="w-12 h-12 rounded-full border-2 border-white object-cover shadow-lg group-hover:border-strongs-gold transition-colors" 
-             />
+             {!imgError ? (
+               <img 
+                 src="https://i.imgur.com/w4Yb9ZC.png" 
+                 onError={() => setImgError(true)}
+                 alt="Strongs Brazil Logo" 
+                 className="w-12 h-12 rounded-full border-2 border-white object-cover shadow-lg group-hover:border-strongs-gold transition-colors bg-strongs-dark" 
+               />
+             ) : (
+               <div className="w-12 h-12 rounded-full bg-strongs-gold flex items-center justify-center text-strongs-darker font-bold border-2 border-white shadow-lg group-hover:bg-white transition-colors">
+                  SB
+               </div>
+             )}
              <h1 className="text-3xl font-display font-bold text-white tracking-widest group-hover:text-strongs-gold transition-colors">
                STRONGS <span className="text-strongs-gold">BRAZIL</span>
              </h1>
