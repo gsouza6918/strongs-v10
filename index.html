@@ -122,15 +122,19 @@
         stroke: #FFD700 !important;
       }
     </style>
-  <script type="importmap">
+    <!-- REMOVIDO: importmap antigo que causava conflito de versões -->
+    <script type="module" src="/index.tsx"></script>
+<script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@^19.2.4",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
     "react/": "https://esm.sh/react@^19.2.4/",
     "lucide-react": "https://esm.sh/lucide-react@^0.564.0",
+    "react-quill": "https://esm.sh/react-quill@^2.0.0",
     "firebase/": "https://esm.sh/firebase@^12.9.0/",
-    "react-quill": "https://esm.sh/react-quill@^2.0.0"
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.4"
   }
 }
 </script>
