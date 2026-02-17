@@ -183,13 +183,13 @@ export const Rankings: React.FC<RankingsProps> = ({ data }) => {
                 <img src={member.confImage} alt="Conf" className="w-8 h-8 md:w-8 md:h-8 flex-shrink-0 rounded-full object-contain bg-black/40 hidden sm:block" />
               )}
               
-              {/* Name Info */}
+              {/* Name Info - HIGHLIGHTING TEAM NAME */}
               <div className="flex-1 min-w-0 pr-2">
                 <h3 className={`font-bold truncate leading-tight ${index === 0 ? 'text-base md:text-lg text-white' : 'text-sm md:text-base text-white'}`}>
-                  {member.name}
+                  {member.teamName}
                 </h3>
                 <p className="text-[10px] md:text-xs text-gray-400 truncate">
-                  {member.teamName} <span className="hidden sm:inline">• {member.confName}</span>
+                  {member.name} <span className="hidden sm:inline">• {member.confName}</span>
                 </p>
               </div>
             </div>

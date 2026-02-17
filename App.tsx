@@ -641,8 +641,8 @@ const App: React.FC = () => {
                                     {member.name.charAt(0)}
                                  </div>
                                  <div className="overflow-hidden">
-                                    <p className="text-sm font-bold text-gray-200 truncate">{member.name}</p>
-                                    <p className="text-xs text-gray-500 truncate">{member.teamName}</p>
+                                    <p className="text-sm font-bold text-gray-200 truncate">{member.teamName}</p>
+                                    <p className="text-xs text-gray-500 truncate">{member.name}</p>
                                  </div>
                                  {member.isManager && (
                                     <span className="ml-auto text-[10px] bg-blue-900 text-blue-200 px-1 rounded uppercase font-bold" title="Gestor">G</span>
