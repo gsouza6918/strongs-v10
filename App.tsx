@@ -5,7 +5,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { Button } from './components/Button';
 import { AppData, UserRole, ConfTier, JoinApplication } from './types';
 import { loadData } from './services/storage'; // We keep this just for DEFAULT_DATA structure
-import { Trophy, ChevronRight, Lock, Users, Shield, UserPlus, Send, Briefcase, Coins, Percent, Smartphone, Star, Loader2, AlertTriangle, CheckSquare } from 'lucide-react';
+import { Trophy, ChevronRight, Lock, Users, Shield, UserPlus, Send, Briefcase, Coins, Percent, Smartphone, Star, Loader2, AlertTriangle, CheckSquare, RefreshCw } from 'lucide-react';
 
 // Firebase Imports
 import { db, isConfigured } from './services/firebase';
@@ -15,6 +15,7 @@ const App: React.FC = () => {
   // Initialize with minimal state, data will come from Firebase
   const [data, setData] = useState<AppData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState('home');
   const [selectedNews, setSelectedNews] = useState<string | null>(null);
 
@@ -41,63 +42,104 @@ const App: React.FC = () => {
 
   // 1. Connect to Firebase on Mount
   useEffect(() => {
-    // If not configured, we don't try to connect to avoid errors
-    if (!isConfigured || !db) {
+    let unsubscribe = () => {};
+
+    // Safety check for configuration
+    if (!isConfigured) {
+      setErrorMsg("O Firebase não está configurado. Verifique o arquivo services/firebase.ts.");
       setLoading(false);
       return;
     }
 
-    const dataRef = ref(db, 'strongs_db');
-    
-    // Listen for changes in the database
-    const unsubscribe = onValue(dataRef, (snapshot) => {
-      const val = snapshot.val();
-      const sessionUser = currentUserRef.current;
+    if (!db) {
+      setErrorMsg("Falha ao inicializar o banco de dados. Verifique as chaves no arquivo services/firebase.ts.");
+      setLoading(false);
+      return;
+    }
 
-      if (val) {
-        // CRITICAL FIX: Firebase strips empty arrays/keys. We must default them to [] 
-        // to prevent "Cannot read properties of undefined (reading 'filter')" crashes.
-        const safeData: AppData = {
-            ...val,
-            users: val.users || [],
-            confederations: val.confederations || [],
-            members: val.members || [],
-            news: val.news || [],
-            top100History: val.top100History || [],
-            joinApplications: val.joinApplications || [],
-            currentUser: sessionUser // Inject local session
-        };
+    try {
+        const dataRef = ref(db, 'strongs_db');
+        
+        // Timeout protection: if Firebase takes too long (e.g. firewall or bad rules), show error
+        const timeoutId = setTimeout(() => {
+            if (loading) { // logic here relies on closure, better to check if data is still null
+                setLoading((currentLoading) => {
+                    if (currentLoading) {
+                        setErrorMsg("A conexão com o banco de dados está demorando muito. Verifique se o 'Realtime Database' está ativado e as Regras de Segurança estão em modo 'Teste'.");
+                        return false; 
+                    }
+                    return currentLoading;
+                });
+            }
+        }, 15000); // 15 seconds timeout
 
-        // --- SESSION RESTORATION LOGIC ---
-        // 1. If we have an active session user, update it with fresh data from DB
-        if (sessionUser) {
-            const freshUser = safeData.users.find(u => u.id === sessionUser.id);
-            if (freshUser) safeData.currentUser = freshUser;
-        } 
-        // 2. If NO active session, check localStorage for "Keep me logged in" token
-        else {
-            const storedUid = localStorage.getItem('strongs_session_uid');
-            if (storedUid) {
-                const restoredUser = safeData.users.find(u => u.id === storedUid);
-                if (restoredUser) {
-                    safeData.currentUser = restoredUser;
-                    currentUserRef.current = restoredUser; // Sync ref immediately
+        // Listen for changes in the database
+        unsubscribe = onValue(dataRef, (snapshot) => {
+          clearTimeout(timeoutId); // Success, clear timeout
+          const val = snapshot.val();
+          const sessionUser = currentUserRef.current;
+
+          if (val) {
+            // CRITICAL FIX: Firebase strips empty arrays/keys. We must default them to [] 
+            // to prevent "Cannot read properties of undefined (reading 'filter')" crashes.
+            const safeData: AppData = {
+                ...val,
+                users: val.users || [],
+                confederations: val.confederations || [],
+                members: val.members || [],
+                news: val.news || [],
+                top100History: val.top100History || [],
+                joinApplications: val.joinApplications || [],
+                currentUser: sessionUser // Inject local session
+            };
+
+            // --- SESSION RESTORATION LOGIC ---
+            // 1. If we have an active session user, update it with fresh data from DB
+            if (sessionUser) {
+                const freshUser = safeData.users.find(u => u.id === sessionUser.id);
+                if (freshUser) safeData.currentUser = freshUser;
+            } 
+            // 2. If NO active session, check localStorage for "Keep me logged in" token
+            else {
+                const storedUid = localStorage.getItem('strongs_session_uid');
+                if (storedUid) {
+                    const restoredUser = safeData.users.find(u => u.id === storedUid);
+                    if (restoredUser) {
+                        safeData.currentUser = restoredUser;
+                        currentUserRef.current = restoredUser; // Sync ref immediately
+                    }
                 }
             }
-        }
 
-        setData(safeData);
-      } else {
-        // If Firebase is empty (first run), load default data and upload it
-        const defaultData = loadData();
-        set(dataRef, defaultData); // Upload default structure
-        setData(defaultData);
-      }
-      setLoading(false);
-    }, (error) => {
-      console.error("Firebase read error:", error);
-      setLoading(false);
-    });
+            setData(safeData);
+          } else {
+            // If Firebase is empty (first run), load default data and upload it
+            const defaultData = loadData();
+            set(dataRef, defaultData).catch(err => {
+                console.error("Erro ao criar dados iniciais:", err);
+                setErrorMsg("Erro ao criar dados iniciais: " + err.message);
+            });
+            setData(defaultData);
+          }
+          setLoading(false);
+          setErrorMsg(null); // Clear any previous errors
+        }, (error) => {
+          clearTimeout(timeoutId);
+          console.error("Firebase read error:", error);
+          // Translate common errors
+          let msg = error.message;
+          if (msg.includes("permission_denied")) msg = "Permissão negada. Configure as Regras do Realtime Database para 'modo de teste' (leitura/escrita pública).";
+          if (msg.includes("Client is offline")) msg = "Você está offline.";
+          
+          setErrorMsg(`Erro de conexão: ${msg}`);
+          setLoading(false);
+        });
+
+    } catch (err: any) {
+        console.error("Critical Firebase Error:", err);
+        setErrorMsg("Erro crítico ao conectar: " + err.message);
+        setLoading(false);
+    }
 
     return () => unsubscribe();
   }, []); // Run once on mount
@@ -638,28 +680,40 @@ const App: React.FC = () => {
     </div>
   );
 
-  // Check configuration before anything else
-  if (!isConfigured) {
+  // Critical Error Screen (Connection Failed)
+  if (errorMsg) {
     return (
         <div className="min-h-screen bg-strongs-darker flex items-center justify-center p-4">
-            <div className="bg-gray-900 border border-red-500 rounded-xl p-8 max-w-2xl text-center shadow-2xl">
-                <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-                <h1 className="text-3xl text-white font-bold mb-4 font-display uppercase tracking-widest">Configuração Necessária</h1>
-                <p className="text-gray-300 mb-6 text-lg">
-                    O site está pronto, mas precisa ser conectado ao seu banco de dados Firebase.
-                </p>
-                <div className="bg-black/50 p-4 rounded text-left text-sm font-mono text-gray-400 mb-6 overflow-x-auto border border-gray-700">
-                    <p className="mb-2 text-strongs-gold font-bold">// Abra o arquivo: services/firebase.ts</p>
-                    <p>const firebaseConfig = {'{'}</p>
-                    <p className="pl-4">apiKey: <span className="text-green-400">"COLE_SUA_API_KEY_AQUI"</span>,</p>
-                    <p className="pl-4">authDomain: "SEU_PROJETO.firebaseapp.com",</p>
-                    <p className="pl-4">databaseURL: "https://seu-projeto...firebaseio.com",</p>
-                    <p className="pl-4">...</p>
-                    <p>{'};'}</p>
+            <div className="bg-gray-900 border border-red-500 rounded-xl p-8 max-w-lg text-center shadow-2xl relative overflow-hidden">
+                {/* Background pulse effect */}
+                <div className="absolute inset-0 bg-red-500/5 animate-pulse pointer-events-none"></div>
+                
+                <div className="relative z-10">
+                    <AlertTriangle className="w-20 h-20 text-red-500 mx-auto mb-6" />
+                    <h1 className="text-3xl text-white font-bold mb-4 font-display uppercase tracking-widest">Erro de Conexão</h1>
+                    
+                    <div className="bg-black/40 p-4 rounded-lg border border-red-900/50 mb-6 text-left">
+                        <p className="text-red-200 text-sm font-mono break-words">
+                            {errorMsg}
+                        </p>
+                    </div>
+
+                    <div className="space-y-3">
+                        <p className="text-gray-400 text-sm">
+                            Possíveis causas:
+                        </p>
+                        <ul className="text-gray-500 text-xs text-left list-disc pl-5 space-y-1 mb-6">
+                            <li>O serviço "Realtime Database" não foi criado no console do Firebase.</li>
+                            <li>As Regras de Segurança estão bloqueando o acesso (não estão em modo teste).</li>
+                            <li>As chaves de API estão incorretas.</li>
+                            <li>Sua conexão com a internet caiu.</li>
+                        </ul>
+                    </div>
+
+                    <Button onClick={() => window.location.reload()} variant="primary" className="w-full flex items-center justify-center gap-2">
+                        <RefreshCw size={20} /> Tentar Novamente
+                    </Button>
                 </div>
-                <p className="text-white font-bold bg-red-900/30 p-4 rounded border border-red-500/30">
-                    Edite o arquivo <code>services/firebase.ts</code> com as chaves do seu projeto Firebase e recarregue a página.
-                </p>
             </div>
         </div>
     );
