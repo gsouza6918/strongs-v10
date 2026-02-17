@@ -1,4 +1,4 @@
-import { initializeApp } from "firebase/app";
+import * as firebaseApp from "firebase/app";
 import { getDatabase } from "firebase/database";
 
 // Configuração do Firebase
@@ -21,7 +21,8 @@ let db: any;
 
 if (isConfigured) {
   try {
-    app = initializeApp(firebaseConfig);
+    // Access initializeApp from the namespace import to satisfy potential type mismatches
+    app = firebaseApp.initializeApp(firebaseConfig);
     // Correção: Passamos a URL explicitamente para garantir a conexão
     db = getDatabase(app, firebaseConfig.databaseURL);
     console.log("Firebase conectado com sucesso!");

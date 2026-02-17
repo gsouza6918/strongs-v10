@@ -188,6 +188,11 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
+  // --- HELPER: Sanitize for Firebase (removes undefined) ---
+  const sanitizeForFirebase = (obj: any) => {
+    return JSON.parse(JSON.stringify(obj));
+  };
+
   // --- GRANULAR WRITE OPERATIONS ---
 
   // 1. Members (Granular on membersConf/{id})
@@ -195,7 +200,8 @@ const App: React.FC = () => {
       if (!db || !isConfigured) return;
       try {
           console.log(`Saving member ${member.id} to membersConf...`);
-          await set(ref(db, `strongs_db/membersConf/${member.id}`), member);
+          const payload = sanitizeForFirebase(member);
+          await set(ref(db, `strongs_db/membersConf/${member.id}`), payload);
           setSaveError(null);
       } catch (err: any) {
           console.error("Error saving member:", err);
@@ -216,43 +222,47 @@ const App: React.FC = () => {
   };
 
   // 2. Lists (Write to specific list node, avoiding root write)
-  // For these arrays, we overwrite the list node. Ideally, these would be maps too, 
-  // but for now, isolating them prevents member data loss.
-
   const handleUpdateUsers = async (users: User[]) => {
       if (!db) return;
-      await set(ref(db, 'strongs_db/users'), users);
+      const payload = sanitizeForFirebase(users);
+      await set(ref(db, 'strongs_db/users'), payload);
   };
 
   const handleUpdateConfs = async (confs: Confederation[]) => {
       if (!db) return;
-      await set(ref(db, 'strongs_db/confederations'), confs);
+      const payload = sanitizeForFirebase(confs);
+      await set(ref(db, 'strongs_db/confederations'), payload);
   };
 
   const handleUpdateNews = async (news: NewsPost[]) => {
       if (!db) return;
-      await set(ref(db, 'strongs_db/news'), news);
+      const payload = sanitizeForFirebase(news);
+      await set(ref(db, 'strongs_db/news'), payload);
   };
 
   const handleUpdateTop100 = async (history: Top100Entry[]) => {
       if (!db) return;
-      await set(ref(db, 'strongs_db/top100History'), history);
+      const payload = sanitizeForFirebase(history);
+      await set(ref(db, 'strongs_db/top100History'), payload);
   };
 
   const handleUpdateJoinApps = async (apps: JoinApplication[]) => {
       if (!db) return;
-      await set(ref(db, 'strongs_db/joinApplications'), apps);
+      const payload = sanitizeForFirebase(apps);
+      await set(ref(db, 'strongs_db/joinApplications'), payload);
   };
 
   const handleUpdateSeasons = async (seasons: ArchivedSeason[]) => {
       if (!db) return;
-      await set(ref(db, 'strongs_db/archivedSeasons'), seasons);
+      const payload = sanitizeForFirebase(seasons);
+      await set(ref(db, 'strongs_db/archivedSeasons'), payload);
   };
 
   // Special case: Resetting DB (Dangerous, keeps root write but only for owner)
   const handleResetDB = async (fullData: AppData) => {
       if (!db) return;
-      await set(ref(db, 'strongs_db'), fullData);
+      const payload = sanitizeForFirebase(fullData);
+      await set(ref(db, 'strongs_db'), payload);
   };
 
   // --- AUTH HANDLERS ---
