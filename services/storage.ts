@@ -3,6 +3,16 @@ import { AppData, User, UserRole, ConfTier } from '../types';
 
 const STORAGE_KEY = 'strongs_brazil_db_v2';
 
+// Helper to create empty weeks structure
+const createEmptyWeeks = () => {
+    return Array(4).fill(null).map(() => ({
+        games: Array(4).fill(null).map(() => ({
+            result: 'NONE',
+            attendance: 'NONE'
+        }))
+    }));
+};
+
 const DEFAULT_DATA: AppData = {
   currentUser: null,
   users: [
@@ -22,8 +32,15 @@ const DEFAULT_DATA: AppData = {
       imageUrl: 'https://cdn-icons-png.flaticon.com/512/9309/9309390.png',
       active: true
     },
+    { 
+      id: 'c2', 
+      name: 'Strongs Beta', 
+      tier: ConfTier.DIAMOND,
+      imageUrl: '',
+      active: true
+    }
   ],
-  members: [],
+  members: [], // Start empty to avoid conflict, user can add via Admin Panel
   news: [
     {
       id: 'n1',
@@ -42,28 +59,19 @@ const DEFAULT_DATA: AppData = {
 export const loadData = (): AppData => {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored) {
-    // Migration for existing data (if any) to include active flag
-    const parsedData = JSON.parse(stored);
-    if (parsedData.confederations) {
-      parsedData.confederations = parsedData.confederations.map((c: any) => ({
-        ...c,
-        active: c.active !== undefined ? c.active : true
-      }));
+    try {
+        const parsedData = JSON.parse(stored);
+        // Ensure structure integrity on load
+        if (!parsedData.members) parsedData.members = [];
+        if (!parsedData.confederations) parsedData.confederations = [];
+        return parsedData;
+    } catch (e) {
+        console.error("Error loading local data, resetting to default.");
     }
-    // Migration for archivedSeasons
-    if (!parsedData.archivedSeasons) {
-        parsedData.archivedSeasons = [];
-    }
-    return parsedData;
   }
   return DEFAULT_DATA;
 };
 
 export const saveData = (data: AppData) => {
-  // Don't save currentUser to localstorage persistence to avoid auto-login issues in this demo, 
-  // or do save it if we want persistence. Let's strictly save the *database*, not the session.
-  const { currentUser, ...db } = data; 
-  // We need to preserve the DB but we can re-inject current user if needed. 
-  // actually for simplicity in this React state model, we will save everything.
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 };

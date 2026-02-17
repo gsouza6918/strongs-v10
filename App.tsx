@@ -43,13 +43,12 @@ const App: React.FC = () => {
   const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
 
   // Helper to force arrays even if Firebase returns Objects (happens with sparse arrays or deletions)
-  const ensureArray = (data: any) => {
+const ensureArray = (data: any) => {
     if (!data) return [];
     if (Array.isArray(data)) {
-        // Filter out nulls/undefineds which can happen with sparse arrays in JS
         return data.filter(item => item !== null && item !== undefined);
     }
-    // If it's an object (Firebase behavior for sparse arrays), convert to array
+    // Se for objeto (comportamento do Firebase para arrays esparsos), converte
     return Object.values(data).filter(item => item !== null && item !== undefined);
   };
 
@@ -194,7 +193,7 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, []); // Run once on mount
 
-  // 2. Helper to update Data (Updates Local State + Sends to Firebase)
+// 2. Helper to update Data (Updates Local State + Sends to Firebase)
   const updateData = (newData: Partial<AppData>) => {
     if (!data) return;
 
@@ -217,23 +216,42 @@ const App: React.FC = () => {
     // PREPARE FOR FIREBASE SAVE
     const { currentUser: _, ...dbPayload } = updatedData;
     
-    // Clean payload: Ensure arrays are valid arrays and remove undefined
+    // --- CORREÇÃO DE SEGURANÇA ---
+    // Garante que 'members' seja tratado como array, mesmo se vier como Objeto do estado local
+    let membersToSave = dbPayload.members || [];
+    if (!Array.isArray(membersToSave)) {
+        // Se for objeto, converte para array
+        membersToSave = Object.values(membersToSave);
+    }
+
+    // Filtra nulos/indefinidos antes de sanitizar
+    membersToSave = membersToSave.filter((m: any) => m !== null && m !== undefined);
+
+    console.log("Salvando no Firebase...", membersToSave.length, "membros.");
+
     const cleanPayload = {
       ...dbPayload,
-      // IMPORTANT: Re-sanitize members before saving to ensure full structure is written to DB.
-      // This prevents writing sparse arrays which turn into objects on reload.
-      members: sanitizeMembers(Array.isArray(dbPayload.members) ? dbPayload.members : []),
-      users: Array.isArray(dbPayload.users) ? dbPayload.users.filter(u => u) : [],
-      confederations: Array.isArray(dbPayload.confederations) ? dbPayload.confederations.filter(c => c) : [],
+      // Aplica a sanitização profunda no array garantido
+      members: sanitizeMembers(membersToSave),
+      users: ensureArray(dbPayload.users),
+      confederations: ensureArray(dbPayload.confederations),
+      // Garante que outras listas também não quebrem
+      news: ensureArray(dbPayload.news),
+      joinApplications: ensureArray(dbPayload.joinApplications),
+      top100History: ensureArray(dbPayload.top100History),
+      archivedSeasons: ensureArray(dbPayload.archivedSeasons),
     };
 
     // Save to Firebase ONLY if configured
     if (isConfigured && db) {
       set(ref(db, 'strongs_db'), cleanPayload)
-        .then(() => setSaveError(null))
+        .then(() => {
+            console.log("Salvo com sucesso!");
+            setSaveError(null);
+        })
         .catch(err => {
             console.error("Erro ao salvar no Firebase:", err);
-            setSaveError("Falha ao salvar alterações. Verifique sua conexão.");
+            setSaveError("Falha ao salvar alterações: " + err.message);
         });
     }
   };

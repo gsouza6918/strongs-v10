@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { AppData, User, UserRole, ConfTier, Member, Confederation, GameResult, Attendance, NewsPost, JoinApplication, ArchivedSeason } from '../types';
 import { Button } from './Button';
-import { Trash2, Edit, Plus, UserPlus, ShieldCheck, ChevronDown, ChevronUp, Save, Check, Trophy, XCircle, ImageIcon, ClipboardList, CheckCircle2, Clock, ExternalLink, Power, PowerOff, Play, History, Download } from 'lucide-react';
+import { Trash2, Edit, Plus, UserPlus, ShieldCheck, ChevronDown, ChevronUp, Save, Check, Trophy, XCircle, ImageIcon, ClipboardList, CheckCircle2, Clock, ExternalLink, Power, PowerOff, Play, History, Download, RefreshCcw, AlertOctagon } from 'lucide-react';
 import ReactQuill from 'react-quill';
+import { loadData } from '../services/storage'; // Import defaults
 
 interface AdminPanelProps {
   data: AppData;
@@ -154,9 +155,20 @@ const ConfManagement: React.FC<{data: AppData, currentUser: User, onUpdateData: 
         return;
       }
 
-      // Init empty weeks structure
-      const emptyGames = Array(4).fill(null).map(() => ({ result: 'NONE' as GameResult, attendance: 'NONE' as Attendance }));
-      const emptyWeeks = Array(4).fill(null).map(() => ({ games: [...emptyGames] }));
+      // Init empty weeks structure robustly
+      const emptyGames = [
+          { result: 'NONE' as GameResult, attendance: 'NONE' as Attendance },
+          { result: 'NONE' as GameResult, attendance: 'NONE' as Attendance },
+          { result: 'NONE' as GameResult, attendance: 'NONE' as Attendance },
+          { result: 'NONE' as GameResult, attendance: 'NONE' as Attendance }
+      ];
+      
+      const emptyWeeks = [
+          { games: [...emptyGames] },
+          { games: [...emptyGames] },
+          { games: [...emptyGames] },
+          { games: [...emptyGames] }
+      ];
 
       const newMember: Member = {
         id: Math.random().toString(36).substr(2, 9),
@@ -165,7 +177,7 @@ const ConfManagement: React.FC<{data: AppData, currentUser: User, onUpdateData: 
         teamName: newMemberTeam,
         isManager: false,
         linkedUserId: newMemberLinkUser || undefined,
-        weeks: emptyWeeks
+        weeks: emptyWeeks as any
       };
 
       // If linked user, update user role to MEMBER if they are just USER
@@ -840,20 +852,41 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ data, currentUser, onUpd
     alert("Temporada salva com sucesso! Pontuações zeradas.");
   };
 
+  const handleResetDatabase = () => {
+      if (!isOwner) return;
+      if (!window.confirm("PERIGO: Isso irá APAGAR TODOS os dados (Membros, Confederações, Notícias, Histórico) e reverter para o estado inicial padrão.\n\nUse apenas se o banco de dados estiver corrompido ou para recomeçar do zero.\n\nTem certeza absoluta?")) return;
+      if (!window.confirm("Confirmação final: Todos os dados serão perdidos. Continuar?")) return;
+
+      const defaultData = loadData(); // Carrega os dados padrão definidos no arquivo
+      // Força a atualização completa substituindo tudo
+      onUpdateData(defaultData);
+      alert("Banco de dados redefinido para o padrão. Atualize a página se necessário.");
+  };
+
   return (
     <div className="bg-gray-900/90 backdrop-blur rounded-xl p-6 shadow-2xl">
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 border-b border-gray-700 pb-4 gap-4">
         <h2 className="text-3xl font-display font-bold text-white flex items-center gap-2">
             <ShieldCheck className="text-strongs-gold" size={32}/> Painel Administrativo
         </h2>
-        {isOwner && (
-            <Button 
-                onClick={handleStartNewSeason}
-                className="bg-red-900/50 hover:bg-red-800 border border-red-500 text-white flex items-center gap-2 text-sm md:text-base py-2"
-            >
-                <Play size={18} fill="currentColor" /> Iniciar Nova Temporada
-            </Button>
-        )}
+        <div className="flex flex-col md:flex-row gap-2">
+            {isOwner && (
+                <>
+                    <Button 
+                        onClick={handleStartNewSeason}
+                        className="bg-blue-900/50 hover:bg-blue-800 border border-blue-500 text-white flex items-center gap-2 text-sm py-2"
+                    >
+                        <Play size={18} fill="currentColor" /> Nova Temporada
+                    </Button>
+                    <Button 
+                        onClick={handleResetDatabase}
+                        className="bg-red-900/50 hover:bg-red-800 border border-red-500 text-white flex items-center gap-2 text-sm py-2"
+                    >
+                        <AlertOctagon size={18} /> REDEFINIR BANCO DE DADOS
+                    </Button>
+                </>
+            )}
+        </div>
       </div>
 
       {/* Admin Nav */}
