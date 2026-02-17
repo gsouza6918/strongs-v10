@@ -16,6 +16,7 @@ const App: React.FC = () => {
   const [data, setData] = useState<AppData | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null); // New state for save errors
   const [currentPage, setCurrentPage] = useState('home');
   const [selectedNews, setSelectedNews] = useState<string | null>(null);
 
@@ -44,8 +45,12 @@ const App: React.FC = () => {
   // Helper to force arrays even if Firebase returns Objects (happens with sparse arrays or deletions)
   const ensureArray = (data: any) => {
     if (!data) return [];
-    if (Array.isArray(data)) return data;
-    return Object.values(data);
+    if (Array.isArray(data)) {
+        // Filter out nulls/undefineds which can happen with sparse arrays in JS
+        return data.filter(item => item !== null && item !== undefined);
+    }
+    // If it's an object (Firebase behavior for sparse arrays), convert to array
+    return Object.values(data).filter(item => item !== null && item !== undefined);
   };
 
   // 1. Connect to Firebase on Mount
@@ -179,12 +184,24 @@ const App: React.FC = () => {
     // We strip 'currentUser' before saving to DB, because who is logged in is local info
     const { currentUser: _, ...dbPayload } = updatedData;
     
+    // Clean payload: Ensure arrays are valid arrays and remove undefined
+    // This prevents Firebase from rejecting the write or corrupting arrays
+    const cleanPayload = {
+      ...dbPayload,
+      members: Array.isArray(dbPayload.members) ? dbPayload.members.filter(m => m) : [],
+      users: Array.isArray(dbPayload.users) ? dbPayload.users.filter(u => u) : [],
+      confederations: Array.isArray(dbPayload.confederations) ? dbPayload.confederations.filter(c => c) : [],
+    };
+
     // Save to Firebase ONLY if configured
     if (isConfigured && db) {
-      set(ref(db, 'strongs_db'), dbPayload).catch(err => {
-        console.error("Erro ao salvar no Firebase:", err);
-        alert("Erro de conexão. Suas alterações podem não ter sido salvas.");
-      });
+      set(ref(db, 'strongs_db'), cleanPayload)
+        .then(() => setSaveError(null))
+        .catch(err => {
+            console.error("Erro ao salvar no Firebase:", err);
+            setSaveError("Falha ao salvar alterações. Verifique sua conexão.");
+            // Revert state? Ideally yes, but for now we warn the user.
+        });
     }
   };
 
@@ -754,6 +771,15 @@ const App: React.FC = () => {
       onLogout={handleLogout}
       confederations={data.confederations}
     >
+      {/* Global Error Banner for Save Failures */}
+      {saveError && (
+          <div className="bg-red-900/90 text-white text-center p-2 fixed top-0 left-0 right-0 z-[60] animate-fadeIn border-b border-red-500">
+             <AlertTriangle size={18} className="inline mr-2 mb-1"/> 
+             {saveError}
+             <button onClick={() => setSaveError(null)} className="ml-4 underline text-xs">Fechar</button>
+          </div>
+      )}
+
       {currentPage === 'home' && HomePage()}
       {currentPage === 'confederations' && <ConfederationsPage />}
       {currentPage === 'rankings' && <Rankings data={data} />}
