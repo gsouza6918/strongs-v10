@@ -5,7 +5,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { Button } from './components/Button';
 import { AppData, UserRole, ConfTier, JoinApplication } from './types';
 import { loadData } from './services/storage'; // We keep this just for DEFAULT_DATA structure
-import { Trophy, ChevronRight, Lock, Users, Shield, UserPlus, Send, Briefcase, Coins, Percent, Smartphone, Star, Loader2, AlertTriangle } from 'lucide-react';
+import { Trophy, ChevronRight, Lock, Users, Shield, UserPlus, Send, Briefcase, Coins, Percent, Smartphone, Star, Loader2, AlertTriangle, CheckSquare } from 'lucide-react';
 
 // Firebase Imports
 import { db, isConfigured } from './services/firebase';
@@ -33,6 +33,7 @@ const App: React.FC = () => {
   // Login Form State
   const [loginUser, setLoginUser] = useState('');
   const [loginPass, setLoginPass] = useState('');
+  const [keepConnected, setKeepConnected] = useState(false); // New state for persistence
   const [registerName, setRegisterName] = useState('');
   const [registerUser, setRegisterUser] = useState('');
   const [registerPass, setRegisterPass] = useState('');
@@ -67,10 +68,22 @@ const App: React.FC = () => {
             currentUser: sessionUser // Inject local session
         };
 
-        // If the user's data was updated in the DB (e.g. role change), update the session object
+        // --- SESSION RESTORATION LOGIC ---
+        // 1. If we have an active session user, update it with fresh data from DB
         if (sessionUser) {
             const freshUser = safeData.users.find(u => u.id === sessionUser.id);
             if (freshUser) safeData.currentUser = freshUser;
+        } 
+        // 2. If NO active session, check localStorage for "Keep me logged in" token
+        else {
+            const storedUid = localStorage.getItem('strongs_session_uid');
+            if (storedUid) {
+                const restoredUser = safeData.users.find(u => u.id === storedUid);
+                if (restoredUser) {
+                    safeData.currentUser = restoredUser;
+                    currentUserRef.current = restoredUser; // Sync ref immediately
+                }
+            }
         }
 
         setData(safeData);
@@ -129,6 +142,14 @@ const App: React.FC = () => {
     const user = data.users.find(u => u.username === loginUser.trim() && u.password === loginPass);
     if (user) {
       updateData({ currentUser: user });
+      
+      // Handle "Keep me logged in"
+      if (keepConnected) {
+        localStorage.setItem('strongs_session_uid', user.id);
+      } else {
+        localStorage.removeItem('strongs_session_uid');
+      }
+
       setCurrentPage('home');
     } else {
       alert("Credenciais inválidas");
@@ -148,11 +169,19 @@ const App: React.FC = () => {
       role: UserRole.USER // Default role
     };
 
+    // Auto-login on register
     updateData({ users: [...data.users, newUser], currentUser: newUser });
+    
+    // Default to keep connected on register? Or adhere to checkbox? 
+    // Usually simpler to just log them in for the session.
+    // If you want persistence on register, uncomment below:
+    // localStorage.setItem('strongs_session_uid', newUser.id);
+
     setCurrentPage('home');
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('strongs_session_uid'); // Clear persistence
     updateData({ currentUser: null });
     setCurrentPage('login');
   };
@@ -559,6 +588,20 @@ const App: React.FC = () => {
               value={loginPass}
               onChange={e => setLoginPass(e.target.value)}
             />
+            
+            <div className="flex items-center">
+                <input 
+                    type="checkbox" 
+                    id="keepConnected"
+                    checked={keepConnected}
+                    onChange={(e) => setKeepConnected(e.target.checked)}
+                    className="mr-2 w-4 h-4 accent-strongs-gold cursor-pointer"
+                />
+                <label htmlFor="keepConnected" className="text-gray-400 text-sm cursor-pointer select-none">
+                    Mantenha-me conectado
+                </label>
+            </div>
+
             <Button fullWidth onClick={handleLogin} className="py-3 text-lg">Entrar</Button>
             <p className="text-center text-sm text-gray-500 mt-4">
               Não tem conta? <button onClick={() => setAuthMode('REGISTER')} className="text-strongs-gold hover:underline">Cadastre-se</button>
