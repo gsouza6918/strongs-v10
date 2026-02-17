@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { AppData, User, UserRole, ConfTier, Member, Confederation, GameResult, Attendance, NewsPost, JoinApplication, ArchivedSeason } from '../types';
 import { Button } from './Button';
-import { Trash2, Edit, Plus, UserPlus, ShieldCheck, ChevronDown, ChevronUp, Save, Check, Trophy, XCircle, ImageIcon, ClipboardList, CheckCircle2, Clock, ExternalLink, Power, PowerOff, Play } from 'lucide-react';
+import { Trash2, Edit, Plus, UserPlus, ShieldCheck, ChevronDown, ChevronUp, Save, Check, Trophy, XCircle, ImageIcon, ClipboardList, CheckCircle2, Clock, ExternalLink, Power, PowerOff, Play, History } from 'lucide-react';
 import ReactQuill from 'react-quill';
 
 interface AdminPanelProps {
@@ -687,14 +687,56 @@ const JoinRequestsManagement: React.FC<{data: AppData, onUpdateData: (d: Partial
     );
 };
 
+const SeasonManagement: React.FC<{data: AppData, onUpdateData: (d: Partial<AppData>) => void}> = ({data, onUpdateData}) => {
+    const handleDelete = (id: string) => {
+        if(window.confirm("Tem certeza que deseja excluir permanentemente este histórico de temporada?")) {
+            const updatedSeasons = (data.archivedSeasons || []).filter(s => s.id !== id);
+            onUpdateData({ archivedSeasons: updatedSeasons });
+        }
+    };
+
+    return (
+        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <History className="text-strongs-gold"/> Histórico de Temporadas
+            </h3>
+            
+            <div className="space-y-3">
+                {(!data.archivedSeasons || data.archivedSeasons.length === 0) && (
+                    <p className="text-gray-500 italic">Nenhuma temporada arquivada.</p>
+                )}
+                
+                {(data.archivedSeasons || []).slice().reverse().map(season => (
+                    <div key={season.id} className="bg-gray-900 p-4 rounded border border-gray-700 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div className="flex-grow">
+                             <div className="flex items-center gap-2">
+                                <h4 className="text-lg font-bold text-white">{season.name}</h4>
+                                <span className="text-xs text-gray-400 bg-gray-800 px-2 py-0.5 rounded">{new Date(season.date).toLocaleDateString()}</span>
+                             </div>
+                             <div className="text-xs text-gray-500 mt-1 flex gap-4">
+                                <span>{season.confederations.length} Confederações</span>
+                                <span>{season.members.length} Membros</span>
+                             </div>
+                        </div>
+                        <Button variant="danger" onClick={() => handleDelete(season.id)} className="text-xs py-1 flex items-center gap-1">
+                            <Trash2 size={14}/> Excluir
+                        </Button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 export const AdminPanel: React.FC<AdminPanelProps> = ({ data, currentUser, onUpdateData }) => {
-  const [activeSection, setActiveSection] = useState<'USERS' | 'CONFS' | 'NEWS' | 'TOP100' | 'REQUESTS'>('USERS');
+  const [activeSection, setActiveSection] = useState<'USERS' | 'CONFS' | 'NEWS' | 'TOP100' | 'REQUESTS' | 'SEASONS'>('USERS');
 
   const canManageConfs = ['ADMIN', 'OWNER', 'MOD'].includes(currentUser.role);
   const canManageUsers = ['ADMIN', 'OWNER', 'MOD'].includes(currentUser.role);
   const canManageNews = ['ADMIN', 'OWNER'].includes(currentUser.role);
   const canManageTop100 = ['ADMIN', 'OWNER'].includes(currentUser.role);
   const canManageRequests = ['ADMIN', 'OWNER', 'MOD'].includes(currentUser.role);
+  const canManageSeasons = ['ADMIN', 'OWNER'].includes(currentUser.role);
   
   // Manager specific access control
   const canViewConfs = ['ADMIN', 'OWNER', 'MOD', 'MANAGER'].includes(currentUser.role);
@@ -782,6 +824,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ data, currentUser, onUpd
             <ClipboardList size={18} className="mr-2 inline"/> Solicitações
           </Button>
         )}
+        {canManageSeasons && (
+            <Button variant={activeSection === 'SEASONS' ? 'primary' : 'ghost'} onClick={() => setActiveSection('SEASONS')}>
+                <History size={18} className="mr-2 inline"/> Temporadas
+            </Button>
+        )}
       </div>
 
       {/* Content Area */}
@@ -791,6 +838,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ data, currentUser, onUpd
         {activeSection === 'NEWS' && canManageNews && <NewsManagement data={data} onUpdateData={onUpdateData} />}
         {activeSection === 'TOP100' && canManageTop100 && <Top100Management data={data} onUpdateData={onUpdateData} />}
         {activeSection === 'REQUESTS' && canManageRequests && <JoinRequestsManagement data={data} onUpdateData={onUpdateData} />}
+        {activeSection === 'SEASONS' && canManageSeasons && <SeasonManagement data={data} onUpdateData={onUpdateData} />}
       </div>
     </div>
   );
