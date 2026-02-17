@@ -41,6 +41,13 @@ const App: React.FC = () => {
   const [registerPass, setRegisterPass] = useState('');
   const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
 
+  // Helper to force arrays even if Firebase returns Objects (happens with sparse arrays or deletions)
+  const ensureArray = (data: any) => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    return Object.values(data);
+  };
+
   // 1. Connect to Firebase on Mount
   useEffect(() => {
     let unsubscribe = () => {};
@@ -82,16 +89,16 @@ const App: React.FC = () => {
 
           if (val) {
             // CRITICAL FIX: Firebase strips empty arrays/keys. We must default them to [] 
-            // to prevent "Cannot read properties of undefined (reading 'filter')" crashes.
+            // AND ensure they are arrays (Firebase converts sparse arrays to objects).
             const safeData: AppData = {
                 ...val,
-                users: val.users || [],
-                confederations: val.confederations || [],
-                members: val.members || [],
-                news: val.news || [],
-                top100History: val.top100History || [],
-                joinApplications: val.joinApplications || [],
-                archivedSeasons: val.archivedSeasons || [],
+                users: ensureArray(val.users),
+                confederations: ensureArray(val.confederations),
+                members: ensureArray(val.members),
+                news: ensureArray(val.news),
+                top100History: ensureArray(val.top100History),
+                joinApplications: ensureArray(val.joinApplications),
+                archivedSeasons: ensureArray(val.archivedSeasons),
                 currentUser: sessionUser // Inject local session
             };
 
