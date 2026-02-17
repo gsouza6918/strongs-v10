@@ -1,22 +1,25 @@
 import { initializeApp } from "firebase/app";
 import { getDatabase, Database } from "firebase/database";
 
-// SUBSTITUA ESTES DADOS PELOS DADOS QUE VOCÊ COPIOU NO CONSOLE DO FIREBASE
-// Acesse: Console Firebase > Configurações do Projeto > Geral > Seus aplicativos
+// --- INSTRUÇÕES ---
+// 1. Vá no console do Firebase > Configurações do Projeto
+// 2. Role até "Seus aplicativos" e copie as chaves do objeto firebaseConfig
+// 3. Cole os valores abaixo:
+
 const firebaseConfig = {
-  apiKey: "AIzaSyBI71QOO1k8b_0B9oweIJDD6v44yKolyu0",
-  authDomain: "strongs-brazil.firebaseapp.com",
-  databaseURL: "https://strongs-brazil-default-rtdb.firebaseio.com",
-  projectId: "strongs-brazil",
-  storageBucket: "strongs-brazil.firebasestorage.app",
-  messagingSenderId: "1024925581751",
-  appId: "1:1024925581751:web:b02d40cb7ad4aec40da832",
-  measurementId: "G-TN3GJVR4FF"
+  apiKey: "AIzaSyCTdnAaGBdrF5GiOY46XiD1ItAaksDRzhM",
+  authDomain: "strongs-brazil-bddea.firebaseapp.com",
+  databaseURL: "https://strongs-brazil-bddea-default-rtdb.firebaseio.com",
+  projectId: "strongs-brazil-bddea",
+  storageBucket: "strongs-brazil-bddea.firebasestorage.app",
+  messagingSenderId: "447630113773",
+  appId: "1:447630113773:web:8cdef57f44ae0933ab05e4",
+  measurementId: "G-VD7QWV7DY7"
 };
 
-// Verificamos se o usuário já configurou o arquivo (se mudou os valores padrão)
-export const isConfigured = firebaseConfig.apiKey !== "SUA_API_KEY_AQUI" && 
-                            !firebaseConfig.databaseURL.includes("seu-projeto-default");
+// Verificamos se o usuário já configurou o arquivo
+export const isConfigured = firebaseConfig.apiKey !== "COLE_SUA_NOVA_API_KEY_AQUI" && 
+                            !firebaseConfig.databaseURL.includes("SEU_NOVO_PROJETO");
 
 let app;
 let db: Database | undefined;
@@ -26,6 +29,7 @@ if (isConfigured) {
   try {
     app = initializeApp(firebaseConfig);
     db = getDatabase(app);
+    console.log("Firebase conectado com sucesso!");
   } catch (error) {
     console.error("Erro ao inicializar Firebase:", error);
   }
