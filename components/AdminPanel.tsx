@@ -213,11 +213,27 @@ const ConfManagement: React.FC<{data: AppData, currentUser: User, onUpdateData: 
       // Get current state from local edits OR original data
       const currentMemberState = localMemberEdits[member.id] || member;
 
-      const newWeeks = [...currentMemberState.weeks];
-      if(!newWeeks[weekIdx]) newWeeks[weekIdx] = { games: Array(4).fill({result: 'NONE', attendance: 'NONE'}) };
-      const newGames = [...newWeeks[weekIdx].games];
-      newGames[gameIdx] = { ...newGames[gameIdx], [field]: value };
-      newWeeks[weekIdx] = { ...newWeeks[weekIdx], games: newGames };
+      // Safe deep copy of weeks to avoid mutation and handle potential undefineds
+      const newWeeks = currentMemberState.weeks ? [...currentMemberState.weeks] : [];
+      
+      // Ensure the week object exists
+      if(!newWeeks[weekIdx]) {
+         newWeeks[weekIdx] = { games: Array(4).fill({result: 'NONE', attendance: 'NONE'}) };
+      }
+
+      // Safe copy of games
+      const weekGames = newWeeks[weekIdx].games ? [...newWeeks[weekIdx].games] : [];
+      
+      // Ensure the game object exists
+      if (!weekGames[gameIdx]) {
+        weekGames[gameIdx] = { result: 'NONE', attendance: 'NONE' };
+      }
+
+      // Update the specific field
+      weekGames[gameIdx] = { ...weekGames[gameIdx], [field]: value };
+      
+      // Re-assign games to week
+      newWeeks[weekIdx] = { ...newWeeks[weekIdx], games: weekGames };
 
       const updatedMember = { ...currentMemberState, weeks: newWeeks };
       

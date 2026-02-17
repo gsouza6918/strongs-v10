@@ -3,7 +3,7 @@ import { Layout } from './components/Layout';
 import { Rankings } from './components/Rankings';
 import { AdminPanel } from './components/AdminPanel';
 import { Button } from './components/Button';
-import { AppData, UserRole, ConfTier, JoinApplication } from './types';
+import { AppData, UserRole, ConfTier, JoinApplication, Member, GameResult, Attendance } from './types';
 import { loadData } from './services/storage'; // We keep this just for DEFAULT_DATA structure
 import { Trophy, ChevronRight, Lock, Users, Shield, UserPlus, Send, Briefcase, Coins, Percent, Smartphone, Star, Loader2, AlertTriangle, CheckSquare, RefreshCw } from 'lucide-react';
 
@@ -53,6 +53,39 @@ const App: React.FC = () => {
     return Object.values(data).filter(item => item !== null && item !== undefined);
   };
 
+  // Deep Sanitize Members: Ensures every member has 4 weeks and 4 games structure
+  // This is crucial because Firebase drops empty keys, breaking the array structure on reload.
+  const sanitizeMembers = (rawMembers: any[]): Member[] => {
+      const cleanList = ensureArray(rawMembers);
+      
+      return cleanList.map((m: any) => {
+          // Handle weeks: ensure it's an array of 4 items
+          // If weeks comes as an object (firebase sparse array), convert to array or empty array
+          const rawWeeks = Array.isArray(m.weeks) ? m.weeks : (m.weeks ? Object.values(m.weeks) : []);
+          
+          const sanitizedWeeks = [0, 1, 2, 3].map(weekIdx => {
+              const w = rawWeeks[weekIdx] || {};
+              // Handle games: ensure it's an array of 4 items
+              const rawGames = Array.isArray(w.games) ? w.games : (w.games ? Object.values(w.games) : []);
+              
+              const sanitizedGames = [0, 1, 2, 3].map(gameIdx => {
+                  const g = rawGames[gameIdx] || {};
+                  return {
+                      result: g.result || 'NONE' as GameResult,
+                      attendance: g.attendance || 'NONE' as Attendance
+                  };
+              });
+
+              return { games: sanitizedGames };
+          });
+
+          return {
+              ...m,
+              weeks: sanitizedWeeks
+          };
+      });
+  };
+
   // 1. Connect to Firebase on Mount
   useEffect(() => {
     let unsubscribe = () => {};
@@ -73,9 +106,9 @@ const App: React.FC = () => {
     try {
         const dataRef = ref(db, 'strongs_db');
         
-        // Timeout protection: if Firebase takes too long (e.g. firewall or bad rules), show error
+        // Timeout protection
         const timeoutId = setTimeout(() => {
-            if (loading) { // logic here relies on closure, better to check if data is still null
+            if (loading) { 
                 setLoading((currentLoading) => {
                     if (currentLoading) {
                         setErrorMsg("A conexão com o banco de dados está demorando muito. Verifique se o 'Realtime Database' está ativado e as Regras de Segurança estão em modo 'Teste'.");
@@ -84,7 +117,7 @@ const App: React.FC = () => {
                     return currentLoading;
                 });
             }
-        }, 15000); // 15 seconds timeout
+        }, 15000); 
 
         // Listen for changes in the database
         unsubscribe = onValue(dataRef, (snapshot) => {
@@ -93,13 +126,12 @@ const App: React.FC = () => {
           const sessionUser = currentUserRef.current;
 
           if (val) {
-            // CRITICAL FIX: Firebase strips empty arrays/keys. We must default them to [] 
-            // AND ensure they are arrays (Firebase converts sparse arrays to objects).
+            // CRITICAL FIX: Sanitize Members Deeply
             const safeData: AppData = {
                 ...val,
                 users: ensureArray(val.users),
                 confederations: ensureArray(val.confederations),
-                members: ensureArray(val.members),
+                members: sanitizeMembers(val.members), // Use Deep Sanitize
                 news: ensureArray(val.news),
                 top100History: ensureArray(val.top100History),
                 joinApplications: ensureArray(val.joinApplications),
@@ -108,21 +140,18 @@ const App: React.FC = () => {
             };
 
             // --- SESSION RESTORATION LOGIC ---
-            // 1. If we have an active session user, update it with fresh data from DB
             if (sessionUser) {
                 const freshUser = safeData.users.find(u => u.id === sessionUser.id);
                 if (freshUser) safeData.currentUser = freshUser;
             } 
-            // 2. If NO active session, check localStorage for "Keep me logged in" token
             else {
                 const storedUid = localStorage.getItem('strongs_session_uid');
                 if (storedUid) {
                     const restoredUser = safeData.users.find(u => u.id === storedUid);
                     if (restoredUser) {
                         safeData.currentUser = restoredUser;
-                        // IMPORTANT FIX: Explicitly set state to trigger re-render with logged-in user
                         setCurrentUser(restoredUser); 
-                        currentUserRef.current = restoredUser; // Sync ref immediately
+                        currentUserRef.current = restoredUser; 
                     }
                 }
             }
@@ -131,6 +160,9 @@ const App: React.FC = () => {
           } else {
             // If Firebase is empty (first run), load default data and upload it
             const defaultData = loadData();
+            // Ensure default data is also sanitized before saving first time
+            defaultData.members = sanitizeMembers(defaultData.members);
+            
             set(dataRef, defaultData).catch(err => {
                 console.error("Erro ao criar dados iniciais:", err);
                 setErrorMsg("Erro ao criar dados iniciais: " + err.message);
@@ -142,7 +174,6 @@ const App: React.FC = () => {
         }, (error) => {
           clearTimeout(timeoutId);
           console.error("Firebase read error:", error);
-          // Translate common errors
           let msg = error.message;
           if (msg.includes("permission_denied")) msg = "Permissão negada. Configure as Regras do Realtime Database para 'modo de teste' (leitura/escrita pública).";
           if (msg.includes("Client is offline")) msg = "Você está offline.";
@@ -176,21 +207,19 @@ const App: React.FC = () => {
        if (updatedSessionUser) setCurrentUser(updatedSessionUser);
     }
     
-    // Handle Session State (Current User login/logout)
-    // We do NOT save 'currentUser' to Firebase, as that is per-browser session.
     if (newData.currentUser !== undefined) {
        setCurrentUser(newData.currentUser);
     }
 
     // PREPARE FOR FIREBASE SAVE
-    // We strip 'currentUser' before saving to DB, because who is logged in is local info
     const { currentUser: _, ...dbPayload } = updatedData;
     
     // Clean payload: Ensure arrays are valid arrays and remove undefined
-    // This prevents Firebase from rejecting the write or corrupting arrays
     const cleanPayload = {
       ...dbPayload,
-      members: Array.isArray(dbPayload.members) ? dbPayload.members.filter(m => m) : [],
+      // IMPORTANT: Re-sanitize members before saving to ensure full structure is written to DB.
+      // This prevents writing sparse arrays which turn into objects on reload.
+      members: sanitizeMembers(Array.isArray(dbPayload.members) ? dbPayload.members : []),
       users: Array.isArray(dbPayload.users) ? dbPayload.users.filter(u => u) : [],
       confederations: Array.isArray(dbPayload.confederations) ? dbPayload.confederations.filter(c => c) : [],
     };
@@ -202,7 +231,6 @@ const App: React.FC = () => {
         .catch(err => {
             console.error("Erro ao salvar no Firebase:", err);
             setSaveError("Falha ao salvar alterações. Verifique sua conexão.");
-            // Revert state? Ideally yes, but for now we warn the user.
         });
     }
   };
@@ -243,11 +271,6 @@ const App: React.FC = () => {
     // Auto-login on register
     updateData({ users: [...data.users, newUser], currentUser: newUser });
     
-    // Default to keep connected on register? Or adhere to checkbox? 
-    // Usually simpler to just log them in for the session.
-    // If you want persistence on register, uncomment below:
-    // localStorage.setItem('strongs_session_uid', newUser.id);
-
     setCurrentPage('home');
   };
 
