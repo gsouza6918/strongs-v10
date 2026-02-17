@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserRole, User, Confederation } from '../types';
+import { UserRole, User, Confederation, ConfTier } from '../types';
 import { Menu, X, LogOut, Shield, User as UserIcon, Trophy, Home, Newspaper, Users, Circle, UserPlus } from 'lucide-react';
 
 interface LayoutProps {
@@ -24,6 +24,18 @@ export const Layout: React.FC<LayoutProps> = ({
 
   // Filter only active confederations for display in marquee
   const activeConfs = confederations.filter(c => c.active !== false);
+
+  // Helper to determine styling based on Tier
+  const getTierIconStyle = (tier: ConfTier) => {
+    switch (tier) {
+      case ConfTier.SUPREME:
+        return "border-purple-500 animate-glow-supreme shadow-purple-500/50";
+      case ConfTier.DIAMOND:
+        return "border-cyan-400 animate-glow-diamond shadow-cyan-400/50";
+      default:
+        return "border-gray-700";
+    }
+  };
 
   const NavItem = ({ page, icon: Icon, label }: { page: string, icon: any, label: string }) => (
     <button
@@ -147,11 +159,15 @@ export const Layout: React.FC<LayoutProps> = ({
                <span className="text-gray-600 font-display px-4">Sem confederações cadastradas...</span>
             ) : (
               activeConfs.map((conf, i) => (
-                <div key={`orig-${conf.id}-${i}`} className="flex items-center space-x-3 opacity-70 hover:opacity-100 transition-opacity flex-shrink-0 cursor-default">
+                <div key={`orig-${conf.id}-${i}`} className="flex items-center space-x-3 transition-opacity flex-shrink-0 cursor-default opacity-90 hover:opacity-100">
                    {conf.imageUrl ? (
-                     <img src={conf.imageUrl} className="w-10 h-10 rounded-full border-2 border-gray-700 bg-black/50 object-contain" alt={conf.name} />
+                     <img 
+                      src={conf.imageUrl} 
+                      className={`w-10 h-10 rounded-full border-2 bg-black/50 object-contain ${getTierIconStyle(conf.tier)}`} 
+                      alt={conf.name} 
+                     />
                    ) : (
-                     <div className="w-10 h-10 rounded-full border-2 border-gray-700 bg-gray-800 flex items-center justify-center">
+                     <div className={`w-10 h-10 rounded-full border-2 bg-gray-800 flex items-center justify-center ${getTierIconStyle(conf.tier)}`}>
                        <Circle size={20} className="text-gray-500" />
                      </div>
                    )}
@@ -162,11 +178,15 @@ export const Layout: React.FC<LayoutProps> = ({
 
             {/* Set 2: Duplicate for seamless loop */}
             {activeConfs.length > 0 && activeConfs.map((conf, i) => (
-              <div key={`dup-${conf.id}-${i}`} className="flex items-center space-x-3 opacity-70 hover:opacity-100 transition-opacity flex-shrink-0 cursor-default">
+              <div key={`dup-${conf.id}-${i}`} className="flex items-center space-x-3 transition-opacity flex-shrink-0 cursor-default opacity-90 hover:opacity-100">
                  {conf.imageUrl ? (
-                   <img src={conf.imageUrl} className="w-10 h-10 rounded-full border-2 border-gray-700 bg-black/50 object-contain" alt={conf.name} />
+                   <img 
+                    src={conf.imageUrl} 
+                    className={`w-10 h-10 rounded-full border-2 bg-black/50 object-contain ${getTierIconStyle(conf.tier)}`} 
+                    alt={conf.name} 
+                   />
                  ) : (
-                   <div className="w-10 h-10 rounded-full border-2 border-gray-700 bg-gray-800 flex items-center justify-center">
+                   <div className={`w-10 h-10 rounded-full border-2 bg-gray-800 flex items-center justify-center ${getTierIconStyle(conf.tier)}`}>
                      <Circle size={20} className="text-gray-500" />
                    </div>
                  )}
