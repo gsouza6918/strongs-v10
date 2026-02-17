@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { AppData, ConfTier } from '../types';
 import { calculateMemberPoints, calculateTop100Points } from '../utils';
-import { Trophy, Medal, Star, Crown, History } from 'lucide-react';
+import { Trophy, Medal, Star, Crown, History, Sparkles } from 'lucide-react';
 
 interface RankingsProps {
   data: AppData;
@@ -99,6 +99,15 @@ export const Rankings: React.FC<RankingsProps> = ({ data }) => {
       icon: null,
       text: "text-gray-400"
     };
+  };
+
+  // Helper for Historical Log Entry styling
+  const getEntryEffect = (rank: number) => {
+    if (rank === 1) return "rank-effect-1 text-yellow-200 animate-pulse-gold";
+    if (rank === 2) return "rank-effect-2 text-gray-200";
+    if (rank === 3) return "rank-effect-3 text-orange-200";
+    if (rank <= 10) return "rank-effect-10 text-blue-100";
+    return "border-b border-gray-800/50 text-gray-400";
   };
 
 
@@ -227,12 +236,21 @@ export const Rankings: React.FC<RankingsProps> = ({ data }) => {
               <div className="bg-black/30 rounded p-2 text-sm border-t border-white/5">
                 <h4 className="text-gray-400 uppercase text-[10px] md:text-xs font-bold mb-2 pb-1">Histórico de Conquistas</h4>
                 <div className="max-h-40 overflow-y-auto space-y-1 pr-2 custom-scrollbar">
-                  {item.entries.sort((a, b) => parseInt(b.season) - parseInt(a.season)).map((entry: any, i: number) => (
-                    <div key={i} className="flex justify-between text-gray-300 text-xs border-b border-gray-800/50 pb-1 last:border-0">
-                      <span>Temp {entry.season} • <span className="text-white">Top {entry.rank}</span></span>
-                      <span className="text-strongs-gold">+{entry.earnedPoints} pts</span>
-                    </div>
-                  ))}
+                  {item.entries.sort((a, b) => parseInt(b.season) - parseInt(a.season)).map((entry: any, i: number) => {
+                    const rowEffect = getEntryEffect(entry.rank);
+                    return (
+                      <div key={i} className={`flex justify-between text-xs p-1.5 rounded transition-all hover:bg-white/5 ${rowEffect}`}>
+                        <span className="flex items-center gap-2">
+                          {entry.rank === 1 && <Trophy size={12} className="text-yellow-400" />}
+                          {entry.rank === 2 && <Medal size={12} className="text-gray-300" />}
+                          {entry.rank === 3 && <Medal size={12} className="text-orange-400" />}
+                          {entry.rank > 3 && entry.rank <= 10 && <Star size={12} className="text-blue-400" />}
+                          Temp {entry.season} • <span className={`font-bold ${entry.rank <= 3 ? 'text-white' : ''}`}>Top {entry.rank}</span>
+                        </span>
+                        <span className={`${entry.rank === 1 ? 'text-white font-bold' : 'text-strongs-gold'}`}>+{entry.earnedPoints} pts</span>
+                      </div>
+                    );
+                  })}
                   {item.entries.length === 0 && <span className="text-gray-600 italic">Sem registros.</span>}
                 </div>
               </div>

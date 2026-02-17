@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { AppData, User, UserRole, ConfTier, Member, Confederation, GameResult, Attendance, NewsPost, JoinApplication, ArchivedSeason, Top100Entry } from '../types';
 import { Button } from './Button';
-import { Trash2, Edit, Plus, UserPlus, ShieldCheck, ChevronDown, ChevronUp, Save, Check, Trophy, XCircle, ImageIcon, ClipboardList, CheckCircle2, Clock, ExternalLink, Power, PowerOff, Play, History, Download, RefreshCcw, AlertOctagon } from 'lucide-react';
+import { Trash2, Edit, Plus, UserPlus, ShieldCheck, ChevronDown, ChevronUp, Save, Check, Trophy, XCircle, ImageIcon, ClipboardList, CheckCircle2, Clock, ExternalLink, Power, PowerOff, Play, History, Download, RefreshCcw, AlertOctagon, X } from 'lucide-react';
 import ReactQuill from 'react-quill';
 import { loadData } from '../services/storage'; // Import defaults
 
@@ -643,30 +643,64 @@ const Top100Management: React.FC<{data: AppData, onUpdateTop100: (h: Top100Entry
     const [selectedConf, setSelectedConf] = useState('');
     const [season, setSeason] = useState('');
     const [rank, setRank] = useState<number>(1);
+    const [editingId, setEditingId] = useState<string | null>(null);
 
-    const handleAddHistory = () => {
+    const handleSaveHistory = () => {
       if (!selectedConf || !season || !rank) return;
       const parsedRank = parseInt(rank.toString());
       if (parsedRank < 1 || parsedRank > 100) return alert("Rank deve ser entre 1 e 100");
 
-      const entry: any = {
-        id: Date.now().toString(),
-        confId: selectedConf,
-        season,
-        rank: parsedRank,
-        points: 0, 
-        bonus: 0,
-        dateAdded: new Date().toISOString()
-      };
-      
-      onUpdateTop100([...data.top100History, entry]);
-      setSeason('');
-      setRank(1);
+      if (editingId) {
+        const updatedHistory = data.top100History.map(entry => 
+            entry.id === editingId 
+            ? { ...entry, confId: selectedConf, season, rank: parsedRank }
+            : entry
+        );
+        onUpdateTop100(updatedHistory);
+        alert("Registro atualizado!");
+      } else {
+        const entry: any = {
+            id: Date.now().toString(),
+            confId: selectedConf,
+            season,
+            rank: parsedRank,
+            points: 0, 
+            bonus: 0,
+            dateAdded: new Date().toISOString()
+        };
+        onUpdateTop100([...data.top100History, entry]);
+      }
+      resetForm();
+    };
+
+    const startEdit = (entry: Top100Entry) => {
+        setSelectedConf(entry.confId);
+        setSeason(entry.season);
+        setRank(entry.rank);
+        setEditingId(entry.id);
+    };
+
+    const handleDelete = (id: string) => {
+        if(window.confirm("Apagar este registro histórico?")) {
+            onUpdateTop100(data.top100History.filter(h => h.id !== id));
+            if (editingId === id) resetForm();
+        }
+    };
+
+    const resetForm = () => {
+        setSelectedConf('');
+        setSeason('');
+        setRank(1);
+        setEditingId(null);
     };
 
     return (
       <div className="max-w-xl mx-auto bg-gray-800 p-6 rounded-lg border border-gray-700">
-        <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Trophy className="text-strongs-gold"/> Registrar Top 100</h3>
+        <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold text-white flex items-center gap-2"><Trophy className="text-strongs-gold"/> {editingId ? 'Editar Registro' : 'Registrar Top 100'}</h3>
+            {editingId && <Button variant="ghost" onClick={resetForm} className="text-xs flex items-center gap-1"><X size={14}/> Cancelar</Button>}
+        </div>
+
         <div className="space-y-4">
            <div>
              <label className="text-sm text-gray-400">Confederação</label>
@@ -683,21 +717,27 @@ const Top100Management: React.FC<{data: AppData, onUpdateTop100: (h: Top100Entry
              <label className="text-sm text-gray-400">Colocação (1-100)</label>
              <input type="number" min="1" max="100" className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white" value={rank} onChange={e => setRank(parseInt(e.target.value))} />
            </div>
-           <Button fullWidth onClick={handleAddHistory}>Adicionar Registro</Button>
+           <Button fullWidth onClick={handleSaveHistory}>
+                {editingId ? 'Salvar Alterações' : 'Adicionar Registro'}
+           </Button>
         </div>
 
         <div className="mt-8">
           <h4 className="text-sm uppercase font-bold text-gray-500 mb-2">Últimos Registros</h4>
-          <div className="space-y-2">
-            {data.top100History.slice(-5).reverse().map(h => {
+          <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+            {data.top100History.slice().reverse().map(h => {
                const conf = data.confederations.find(c => c.id === h.confId);
                return (
-                 <div key={h.id} className="text-xs bg-gray-900 p-2 rounded flex justify-between text-gray-300">
-                   <span>{conf?.name || 'Unknown'} - T{h.season}</span>
-                   <span className="text-strongs-gold font-bold">#{h.rank}</span>
+                 <div key={h.id} className={`text-xs bg-gray-900 p-2 rounded flex justify-between items-center text-gray-300 border ${editingId === h.id ? 'border-strongs-gold' : 'border-gray-800'}`}>
+                   <span>{conf?.name || 'Unknown'} - T{h.season} <span className="text-strongs-gold font-bold ml-2">#{h.rank}</span></span>
+                   <div className="flex gap-2">
+                       <button onClick={() => startEdit(h)} className="text-blue-400 hover:text-white"><Edit size={14}/></button>
+                       <button onClick={() => handleDelete(h.id)} className="text-red-500 hover:text-red-300"><Trash2 size={14}/></button>
+                   </div>
                  </div>
                );
             })}
+             {data.top100History.length === 0 && <p className="text-gray-600 italic text-xs">Nenhum registro encontrado.</p>}
           </div>
         </div>
       </div>
