@@ -44,17 +44,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const isAdminOrMod = currentUser && ['ADMIN', 'OWNER', 'MOD', 'MANAGER'].includes(currentUser.role);
 
   return (
-    <div 
-      className="min-h-screen flex flex-col bg-strongs-darker bg-cover bg-center bg-fixed relative"
-      style={{ 
-        backgroundImage: "url('/background.png')",
-        // Fallback color if image fails to load
-        backgroundColor: '#020f14' 
-      }}
-    >
-      {/* Overlay to darken background image and ensure text readability */}
-      <div className="fixed inset-0 bg-black/70 -z-0 pointer-events-none" />
-
+    <div className="min-h-screen flex flex-col relative">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-strongs-darker/95 border-b border-strongs-gold/30 backdrop-blur-sm shadow-lg shadow-black/50">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
