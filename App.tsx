@@ -53,20 +53,23 @@ const App: React.FC = () => {
     return Object.values(data).filter(item => item !== null && item !== undefined);
   };
 
-  // Deep Sanitize Members: Ensures every member has 4 weeks and 4 games structure
-  // This is crucial because Firebase drops empty keys, breaking the array structure on reload.
+// Deep Sanitize Members: Ensures every member has 4 weeks and 4 games structure
   const sanitizeMembers = (rawMembers: any[]): Member[] => {
       const cleanList = ensureArray(rawMembers);
       
       return cleanList.map((m: any) => {
-          // Handle weeks: ensure it's an array of 4 items
-          // If weeks comes as an object (firebase sparse array), convert to array or empty array
-          const rawWeeks = Array.isArray(m.weeks) ? m.weeks : (m.weeks ? Object.values(m.weeks) : []);
+          // CORREÇÃO AQUI: Não use Object.values para semanas.
+          // Acesse diretamente o objeto ou array original.
+          // Isso funciona tanto se o Firebase retornar Array [...] quanto Objeto {"0":...}
+          const rawWeeks = m.weeks || {};
           
           const sanitizedWeeks = [0, 1, 2, 3].map(weekIdx => {
+              // Acessa pelo índice numérico exato. Se não existir, cria vazio.
+              // Isso impede que a Semana 2 pule para o lugar da Semana 1.
               const w = rawWeeks[weekIdx] || {};
-              // Handle games: ensure it's an array of 4 items
-              const rawGames = Array.isArray(w.games) ? w.games : (w.games ? Object.values(w.games) : []);
+              
+              // Mesma correção para os jogos
+              const rawGames = w.games || {};
               
               const sanitizedGames = [0, 1, 2, 3].map(gameIdx => {
                   const g = rawGames[gameIdx] || {};
