@@ -53,7 +53,8 @@ const DEFAULT_DATA: AppData = {
   ],
   top100History: [],
   joinApplications: [],
-  archivedSeasons: []
+  archivedSeasons: [],
+  settings: { activeWeek: 0 } // Default setting
 };
 
 export const loadData = (): AppData => {
@@ -64,6 +65,7 @@ export const loadData = (): AppData => {
         // Ensure structure integrity on load
         if (!parsedData.members) parsedData.members = [];
         if (!parsedData.confederations) parsedData.confederations = [];
+        if (!parsedData.settings) parsedData.settings = { activeWeek: 0 }; // Ensure settings exist
         return parsedData;
     } catch (e) {
         console.error("Error loading local data, resetting to default.");

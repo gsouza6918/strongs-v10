@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from './components/Layout';
 import { Rankings } from './components/Rankings';
 import { AdminPanel } from './components/AdminPanel';
 import { Button } from './components/Button';
-import { AppData, UserRole, ConfTier, JoinApplication, Member, GameResult, Attendance, Confederation, User, NewsPost, Top100Entry, ArchivedSeason } from './types';
+import { AppData, UserRole, ConfTier, JoinApplication, Member, GameResult, Attendance, Confederation, User, NewsPost, Top100Entry, ArchivedSeason, GlobalSettings } from './types';
 import { loadData } from './services/storage'; // We keep this just for DEFAULT_DATA structure
 import { Trophy, ChevronRight, Lock, Users, Shield, UserPlus, Send, Briefcase, Coins, Percent, Smartphone, Star, Loader2, AlertTriangle, CheckSquare, RefreshCw } from 'lucide-react';
 
@@ -132,6 +133,7 @@ const App: React.FC = () => {
                 top100History: ensureArray(val.top100History),
                 joinApplications: ensureArray(val.joinApplications),
                 archivedSeasons: ensureArray(val.archivedSeasons),
+                settings: val.settings || { activeWeek: 0 },
                 currentUser: sessionUser 
             };
 
@@ -257,6 +259,12 @@ const App: React.FC = () => {
       const payload = sanitizeForFirebase(seasons);
       await set(ref(db, 'strongs_db/archivedSeasons'), payload);
   };
+  
+  const handleUpdateSettings = async (settings: GlobalSettings) => {
+      if (!db) return;
+      const payload = sanitizeForFirebase(settings);
+      await set(ref(db, 'strongs_db/settings'), payload);
+  };
 
   // Special case: Resetting DB (Dangerous, keeps root write but only for owner)
   const handleResetDB = async (fullData: AppData) => {
@@ -311,6 +319,14 @@ const App: React.FC = () => {
     localStorage.removeItem('strongs_session_uid');
     setCurrentUser(null);
     setCurrentPage('login');
+  };
+
+  const handleDeleteUser = (userId: string) => {
+      if(!data) return;
+      const user = data.users.find(u => u.id === userId);
+      if(!user) return;
+      if (user.role === UserRole.OWNER) return alert("Dono não pode ser excluído.");
+      if(confirm(`Excluir ${user.username}?`)) handleUpdateUsers(data.users.filter(u => u.id !== userId));
   };
 
   const handleJoinRequest = (app: JoinApplication) => {
@@ -601,64 +617,88 @@ const App: React.FC = () => {
            {data?.confederations.filter(c => c.active !== false).map(conf => {
              const members = data.members.filter(m => m.confId === conf.id);
              return (
-               <div key={conf.id} className="bg-gray-900/80 backdrop-blur border border-gray-700 rounded-xl overflow-hidden shadow-xl hover:border-strongs-gold/50 transition-all">
-                  <div className="p-6 bg-gradient-to-r from-gray-800 to-gray-900 border-b border-gray-700 flex items-center justify-between">
-                     <div className="flex items-center gap-4">
-                        {conf.imageUrl ? (
-                           <img src={conf.imageUrl} className="w-16 h-16 rounded-full border-2 border-strongs-gold object-contain bg-black/50" alt={conf.name} />
-                        ) : (
-                           <div className="w-16 h-16 rounded-full border-2 border-gray-600 bg-gray-800 flex items-center justify-center">
-                              <Shield size={32} className="text-gray-500"/>
-                           </div>
-                        )}
-                        <div>
-                           <h3 className="text-2xl font-display font-bold text-white">{conf.name}</h3>
-                           <span className={`text-xs px-2 py-1 rounded font-bold uppercase tracking-wider ${
-                              conf.tier === ConfTier.SUPREME ? 'bg-purple-900 text-purple-200' :
-                              conf.tier === ConfTier.DIAMOND ? 'bg-blue-900 text-blue-200' :
-                              conf.tier === ConfTier.PLATINUM ? 'bg-slate-600 text-white' :
-                              'bg-yellow-900 text-yellow-200'
-                           }`}>
-                              {conf.tier}
-                           </span>
-                        </div>
-                     </div>
-                     <div className="text-right hidden sm:block">
-                        <span className="block text-3xl font-display font-bold text-white">{members.length}</span>
-                        <span className="text-xs text-gray-400 uppercase">Membros</span>
-                     </div>
-                  </div>
+               <div key={conf.id} className="relative rounded-xl overflow-hidden shadow-2xl border border-gray-700 hover:border-strongs-gold/50 transition-all group min-h-[400px] flex flex-col">
                   
-                  <div className="p-4">
-                     <h4 className="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                        <Users size={12}/> Elenco Atual
-                     </h4>
-                     {members.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                           {members.map(member => (
-                              <div key={member.id} className="flex items-center gap-3 bg-black/20 p-2 rounded border border-gray-800">
-                                 <div className="w-8 h-8 rounded bg-gray-800 flex items-center justify-center font-bold text-gray-500 text-xs">
-                                    {member.name.charAt(0)}
-                                 </div>
-                                 <div className="overflow-hidden">
-                                    <p className="text-sm font-bold text-gray-200 truncate">{member.teamName}</p>
-                                    <p className="text-xs text-gray-500 truncate">{member.name}</p>
-                                 </div>
-                                 {member.isManager && (
-                                    <span className="ml-auto text-[10px] bg-blue-900 text-blue-200 px-1 rounded uppercase font-bold" title="Gestor">G</span>
-                                 )}
-                              </div>
-                           ))}
-                        </div>
-                     ) : (
-                        <p className="text-sm text-gray-500 italic">Nenhum membro registrado.</p>
-                     )}
-                  </div>
-                  
-                  <div className="p-4 border-t border-gray-800 bg-black/20 text-center">
-                     <Button variant="ghost" className="text-xs w-full" onClick={() => setCurrentPage('rankings')}>
-                        Ver Performance no Ranking
-                     </Button>
+                  {/* --- GLOBAL BACKGROUND LAYER --- */}
+                  {/* Background Image with slightly higher opacity for prominence */}
+                  {conf.imageUrl ? (
+                    <>
+                         <div 
+                            className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105 opacity-50 z-0"
+                            style={{ backgroundImage: `url(${conf.imageUrl})` }}
+                         />
+                         {/* Gradient Overlay: Darker at bottom for text, lighter at top for image visibility */}
+                         <div className="absolute inset-0 bg-gradient-to-b from-gray-900/80 via-gray-900/80 to-black/95 z-0" />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 bg-gray-900 z-0" />
+                  )}
+
+                  {/* --- CONTENT LAYER (z-10 ensures it is above background) --- */}
+                  <div className="relative z-10 flex flex-col h-full">
+                      
+                      {/* Header Section */}
+                      <div className="p-6 border-b border-white/10 flex items-center justify-between backdrop-blur-sm">
+                         <div className="flex items-center gap-4">
+                            {conf.imageUrl ? (
+                               <img src={conf.imageUrl} className="w-16 h-16 rounded-full border-2 border-strongs-gold object-contain bg-black/50" alt={conf.name} />
+                            ) : (
+                               <div className="w-16 h-16 rounded-full border-2 border-gray-600 bg-gray-800 flex items-center justify-center">
+                                  <Shield size={32} className="text-gray-500"/>
+                               </div>
+                            )}
+                            <div>
+                               <h3 className="text-2xl font-display font-bold text-white shadow-black drop-shadow-md">{conf.name}</h3>
+                               <span className={`text-xs px-2 py-1 rounded font-bold uppercase tracking-wider ${
+                                  conf.tier === ConfTier.SUPREME ? 'bg-purple-900 text-purple-200' :
+                                  conf.tier === ConfTier.DIAMOND ? 'bg-blue-900 text-blue-200' :
+                                  conf.tier === ConfTier.PLATINUM ? 'bg-slate-600 text-white' :
+                                  'bg-yellow-900 text-yellow-200'
+                               }`}>
+                                  {conf.tier}
+                               </span>
+                            </div>
+                         </div>
+                         <div className="text-right hidden sm:block">
+                            <span className="block text-3xl font-display font-bold text-white shadow-black drop-shadow-md">{members.length}</span>
+                            <span className="text-xs text-gray-400 uppercase">Membros</span>
+                         </div>
+                      </div>
+                      
+                      {/* Members List Section - Now transparent to show BG */}
+                      <div className="p-4 flex-1">
+                         <h4 className="text-xs font-bold text-gray-400 uppercase mb-3 flex items-center gap-2">
+                            <Users size={12}/> Elenco Atual
+                         </h4>
+                         {members.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                               {members.map(member => (
+                                  <div key={member.id} className="flex items-center gap-3 bg-black/40 backdrop-blur-sm p-2 rounded border border-white/10 hover:bg-black/60 transition-colors">
+                                     <div className="w-8 h-8 rounded bg-gray-800/80 flex items-center justify-center font-bold text-gray-500 text-xs">
+                                        {member.name.charAt(0)}
+                                     </div>
+                                     <div className="overflow-hidden">
+                                        <p className="text-sm font-bold text-gray-200 truncate">{member.teamName}</p>
+                                        <p className="text-xs text-gray-400 truncate">{member.name}</p>
+                                     </div>
+                                     {member.isManager && (
+                                        <span className="ml-auto text-[10px] bg-blue-900/80 text-blue-200 px-1 rounded uppercase font-bold" title="Gestor">G</span>
+                                     )}
+                                  </div>
+                               ))}
+                            </div>
+                         ) : (
+                            <p className="text-sm text-gray-500 italic">Nenhum membro registrado.</p>
+                         )}
+                      </div>
+                      
+                      {/* Footer Section */}
+                      <div className="p-4 border-t border-white/10 bg-black/40 backdrop-blur-md text-center mt-auto">
+                         <Button variant="ghost" className="text-xs w-full hover:bg-white/10" onClick={() => setCurrentPage('rankings')}>
+                            Ver Performance no Ranking
+                         </Button>
+                      </div>
+
                   </div>
                </div>
              );
@@ -883,11 +923,13 @@ const App: React.FC = () => {
             onSaveMember={handleSaveMember}
             onDeleteMember={handleDeleteMember}
             onUpdateUsers={handleUpdateUsers}
+            onDeleteUser={handleDeleteUser}
             onUpdateConfs={handleUpdateConfs}
             onUpdateNews={handleUpdateNews}
             onUpdateTop100={handleUpdateTop100}
             onUpdateJoinApps={handleUpdateJoinApps}
             onUpdateSeasons={handleUpdateSeasons}
+            onUpdateSettings={handleUpdateSettings} // Pass new settings handler
             onResetDB={handleResetDB}
           />
       )}

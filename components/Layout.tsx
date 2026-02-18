@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { UserRole, User, Confederation, ConfTier } from '../types';
 import { Menu, X, LogOut, Shield, User as UserIcon, Trophy, Home, Newspaper, Users, Circle, UserPlus } from 'lucide-react';
@@ -87,7 +88,7 @@ export const Layout: React.FC<LayoutProps> = ({
             <NavItem page="home" icon={Home} label="Início" />
             <NavItem page="confederations" icon={Users} label="Confederações" />
             <NavItem page="rankings" icon={Trophy} label="Rankings" />
-            <NavItem page="join-us" icon={UserPlus} label="Quero me Juntar" />
+            <NavItem page="join-us" icon={UserPlus} label="Inscreva-se em uma confederação" />
             {isAdminOrMod && <NavItem page="admin" icon={Shield} label="Painel" />}
             
             {currentUser ? (
@@ -122,7 +123,7 @@ export const Layout: React.FC<LayoutProps> = ({
             <NavItem page="home" icon={Home} label="Início" />
             <NavItem page="confederations" icon={Users} label="Confederações" />
             <NavItem page="rankings" icon={Trophy} label="Rankings" />
-            <NavItem page="join-us" icon={UserPlus} label="Quero me Juntar" />
+            <NavItem page="join-us" icon={UserPlus} label="Inscreva-se em uma confederação" />
             {isAdminOrMod && <NavItem page="admin" icon={Shield} label="Painel" />}
             
             {currentUser ? (
@@ -206,7 +207,7 @@ export const Layout: React.FC<LayoutProps> = ({
       <button
         onClick={() => onNavigate('join-us')}
         className="fixed bottom-24 right-6 z-40 bg-strongs-gold text-strongs-darker p-4 rounded-full shadow-[0_0_20px_rgba(255,215,0,0.5)] border-2 border-white hover:scale-110 transition-transform duration-300 group"
-        title="Quero me juntar"
+        title="Inscreva-se em uma confederação"
       >
         <UserPlus size={32} strokeWidth={2.5} />
         <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-black/80 text-white px-3 py-1 rounded text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none font-bold uppercase tracking-wide">

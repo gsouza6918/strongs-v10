@@ -39,8 +39,13 @@
               'glow-supreme': 'glow-supreme 2s ease-in-out infinite',
               'glow-diamond': 'glow-diamond 3s ease-in-out infinite',
               'pulse-gold': 'pulse-gold 2s infinite',
+              'fadeIn': 'fadeIn 0.3s ease-out forwards',
             },
             keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0', transform: 'translateY(10px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
               scroll: {
                 '0%': { transform: 'translateX(0)' },
                 '100%': { transform: 'translateX(-50%)' },
@@ -74,6 +79,7 @@
       /* Custom Scrollbar */
       ::-webkit-scrollbar {
         width: 8px;
+        height: 8px; /* Added height for horizontal scroll */
       }
       ::-webkit-scrollbar-track {
         background: #020f14;
@@ -84,6 +90,23 @@
       }
       ::-webkit-scrollbar-thumb:hover {
         background: #FFD700;
+      }
+
+      /* Utility to hide scrollbar explicitly */
+      .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+      }
+      .scrollbar-hide {
+          -ms-overflow-style: none; /* IE and Edge */
+          scrollbar-width: none; /* Firefox */
+      }
+
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0.2);
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 4px;
       }
 
       /* Rank Effects for History */
@@ -170,17 +193,17 @@
       }
     </style>
     <script type="module" src="/index.tsx"></script>
-<script type="importmap">
+  <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@^19.2.4",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
     "react/": "https://esm.sh/react@^19.2.4/",
-    "lucide-react": "https://esm.sh/lucide-react@^0.564.0",
-    "react-quill": "https://esm.sh/react-quill@^2.0.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.574.0",
     "firebase/": "https://esm.sh/firebase@^12.9.0/",
     "vite": "https://esm.sh/vite@^7.3.1",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.4"
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.4",
+    "react-dom": "https://esm.sh/react-dom@^19.2.4"
   }
 }
 </script>

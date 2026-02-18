@@ -24,6 +24,11 @@ export interface User {
   linkedMemberId?: string; // If linked to a game member
 }
 
+// --- NEW SETTINGS INTERFACE ---
+export interface GlobalSettings {
+  activeWeek: number; // 0, 1, 2, or 3
+}
+
 export type GameResult = 'WIN' | 'DRAW' | 'LOSS' | 'NONE';
 export type Attendance = 'PRESENT' | 'ABSENT' | 'NO_TRAIN' | 'NONE';
 
@@ -103,5 +108,6 @@ export interface AppData {
   top100History: Top100Entry[];
   joinApplications: JoinApplication[];
   archivedSeasons: ArchivedSeason[];
+  settings: GlobalSettings; // New Field
   currentUser: User | null;
 }
