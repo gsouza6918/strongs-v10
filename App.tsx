@@ -338,53 +338,73 @@ const App: React.FC = () => {
 
   // --- PAGES ---
 
-  const HomePage = () => (
-    <div className="space-y-12 animate-fadeIn">
-      {/* Hero */}
-      <div className="text-center py-12 px-4 bg-gradient-to-b from-transparent to-black/40 rounded-3xl border border-strongs-gold/20 relative overflow-hidden">
-        <div className="relative z-10">
-          <h1 className="text-5xl md:text-7xl font-display font-bold text-white mb-4 drop-shadow-lg">
-            BEM VINDO À <span className="text-strongs-gold">ELITE</span>
-          </h1>
-          <p className="text-gray-300 text-lg md:text-xl max-w-2xl mx-auto mb-8 font-light">
-            Acompanhe rankings, gerencie sua confederação e faça parte da história da Strongs Brazil.
-          </p>
-          <Button 
-            className="text-xl px-8 py-3 shadow-lg shadow-strongs-gold/20" 
-            onClick={() => setCurrentPage('rankings')}
-          >
-            Ver Rankings <ChevronRight className="inline ml-1"/>
-          </Button>
-        </div>
-      </div>
+  const HomePage = () => {
+    // Filter news based on visibility and user auth status
+    // If user is logged in (currentUser exists), show all.
+    // If not, show only news where isPrivate is false (or undefined)
+    const visibleNews = data?.news.filter(post => {
+        if (currentUser) return true;
+        return !post.isPrivate;
+    }) || [];
 
-      {/* News Feed */}
-      <div>
-        <h2 className="text-3xl font-display font-bold text-white mb-6 pl-4 border-l-4 border-strongs-gold">
-          Últimas Notícias
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {data?.news.map(post => (
-             <div key={post.id} className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 hover:border-strongs-gold transition-all duration-300 group cursor-pointer" onClick={() => { setSelectedNews(post.id); setCurrentPage('news-detail'); }}>
-               <div className="h-48 overflow-hidden relative">
-                 <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                 <span className="absolute bottom-2 left-2 text-xs text-gray-300 bg-black/50 px-2 py-1 rounded backdrop-blur">{new Date(post.date).toLocaleDateString()}</span>
-               </div>
-               <div className="p-5">
-                 <h3 className="text-xl font-bold text-white mb-2 leading-tight group-hover:text-strongs-gold transition-colors">{post.title}</h3>
-                 <p className="text-gray-400 text-sm line-clamp-3">{post.subject}</p>
-                 <div className="mt-4 text-strongs-gold text-sm font-bold uppercase tracking-wider flex items-center">
-                   Ler Mais <ChevronRight size={16} />
+    return (
+        <div className="space-y-12 animate-fadeIn">
+          {/* Hero */}
+          <div className="text-center py-12 px-4 bg-gradient-to-b from-transparent to-black/40 rounded-3xl border border-strongs-gold/20 relative overflow-hidden">
+            <div className="relative z-10">
+              <h1 className="text-5xl md:text-7xl font-display font-bold text-white mb-4 drop-shadow-lg">
+                BEM VINDO À <span className="text-strongs-gold">ELITE</span>
+              </h1>
+              <p className="text-gray-300 text-lg md:text-xl max-w-2xl mx-auto mb-8 font-light">
+                Acompanhe rankings, gerencie sua confederação e faça parte da história da Strongs Brazil.
+              </p>
+              <Button 
+                className="text-xl px-8 py-3 shadow-lg shadow-strongs-gold/20" 
+                onClick={() => setCurrentPage('rankings')}
+              >
+                Ver Rankings <ChevronRight className="inline ml-1"/>
+              </Button>
+            </div>
+          </div>
+    
+          {/* News Feed */}
+          <div>
+            <h2 className="text-3xl font-display font-bold text-white mb-6 pl-4 border-l-4 border-strongs-gold">
+              Últimas Notícias
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {visibleNews.map(post => (
+                 <div key={post.id} className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 hover:border-strongs-gold transition-all duration-300 group cursor-pointer relative" onClick={() => { setSelectedNews(post.id); setCurrentPage('news-detail'); }}>
+                   {post.isPrivate && (
+                       <div className="absolute top-2 right-2 z-20 bg-red-600 text-white text-[10px] font-bold uppercase px-2 py-1 rounded shadow-md flex items-center gap-1">
+                           <Lock size={10} /> Privada
+                       </div>
+                   )}
+                   <div className="h-48 overflow-hidden relative">
+                     <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                     <span className="absolute bottom-2 left-2 text-xs text-gray-300 bg-black/50 px-2 py-1 rounded backdrop-blur">{new Date(post.date).toLocaleDateString()}</span>
+                   </div>
+                   <div className="p-5">
+                     <h3 className="text-xl font-bold text-white mb-2 leading-tight group-hover:text-strongs-gold transition-colors">{post.title}</h3>
+                     <p className="text-gray-400 text-sm line-clamp-3">{post.subject}</p>
+                     <div className="mt-4 text-strongs-gold text-sm font-bold uppercase tracking-wider flex items-center">
+                       Ler Mais <ChevronRight size={16} />
+                     </div>
+                   </div>
                  </div>
-               </div>
-             </div>
-          ))}
-          {data?.news.length === 0 && <div className="col-span-3 text-center text-gray-500 py-10">Nenhuma notícia publicada ainda.</div>}
+              ))}
+              {visibleNews.length === 0 && (
+                  <div className="col-span-3 text-center py-10">
+                      <p className="text-gray-500">Nenhuma notícia publicada ainda.</p>
+                      {!currentUser && <p className="text-xs text-gray-600 mt-2">Faça login para ver notícias exclusivas.</p>}
+                  </div>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  );
+      );
+  };
 
   const JoinUsPage = () => {
     const [name, setName] = useState('');
@@ -831,6 +851,7 @@ const App: React.FC = () => {
                <div className="flex items-center text-gray-300 text-sm">
                   <span className="bg-strongs-gold text-black px-2 py-0.5 rounded font-bold uppercase text-xs mr-3">Notícia</span>
                   <span>{new Date(post.date).toLocaleDateString()}</span>
+                  {post.isPrivate && <span className="ml-2 bg-red-600 text-white px-2 py-0.5 rounded font-bold uppercase text-xs flex items-center gap-1"><Lock size={10} /> Privada</span>}
                </div>
             </div>
          </div>

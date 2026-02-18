@@ -66,6 +66,7 @@ export interface NewsPost {
   coverImage: string;
   content: string; // HTML allowed
   date: string;
+  isPrivate?: boolean; // Controls visibility (True = Members Only, False/Undefined = Public)
 }
 
 export interface Top100Entry {

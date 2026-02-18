@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
+import ReactQuill from 'react-quill'; // Importando o Editor Rico
 import { AppData, User, UserRole, Member, Confederation, NewsPost, JoinApplication, ArchivedSeason, Top100Entry, GameResult, Attendance, GlobalSettings, ConfTier } from '../types';
 import { Button } from './Button';
-import { Trash2, ShieldCheck, ClipboardList, UserPlus, History, AlertOctagon, Users, Edit3, X, Save, CheckCircle2, XCircle, MinusCircle, UserMinus, UserCheck, Dumbbell, ArrowLeft, Settings, Lock, Plus, Power, Archive, AlertTriangle } from 'lucide-react';
+import { Trash2, ShieldCheck, ClipboardList, UserPlus, History, AlertOctagon, Users, Edit3, X, Save, CheckCircle2, XCircle, MinusCircle, UserMinus, UserCheck, Dumbbell, ArrowLeft, Settings, Lock, Plus, Power, Archive, AlertTriangle, FileEdit, Globe, EyeOff } from 'lucide-react';
 import { loadData } from '../services/storage';
 
 interface AdminPanelProps {
@@ -685,40 +686,200 @@ const ConfManagement: React.FC<{
 };
 
 const NewsManagement: React.FC<{ data: AppData, onUpdateNews: (n: NewsPost[]) => void }> = ({ data, onUpdateNews }) => {
-    // ... Simplified for brevity, reusing previous logic ...
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
-    
-    const handleAddNews = () => {
-        if (!title || !content) return;
-        const newPost: NewsPost = {
-            id: Date.now().toString(),
-            title,
-            subject: 'Geral',
-            coverImage: 'https://picsum.photos/seed/soccer/800/400',
-            content,
-            date: new Date().toISOString()
-        };
-        onUpdateNews([newPost, ...data.news]);
+    const [coverImage, setCoverImage] = useState('');
+    const [isPrivate, setIsPrivate] = useState(false); // New state for privacy
+    const [editingId, setEditingId] = useState<string | null>(null);
+
+    const modules = {
+        toolbar: [
+            [{ 'header': [1, 2, false] }],
+            ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+            [{'list': 'ordered'}, {'list': 'bullet'}, {'indent': '-1'}, {'indent': '+1'}],
+            ['link', 'image'],
+            ['clean']
+        ],
+    };
+
+    const handleSaveNews = () => {
+        if (!title || !content) return alert("Título e Conteúdo são obrigatórios.");
+
+        if (editingId) {
+            // Updating existing news
+            const updatedNewsList = data.news.map(n => {
+                if (n.id === editingId) {
+                    return {
+                        ...n,
+                        title,
+                        content,
+                        coverImage: coverImage || 'https://picsum.photos/seed/soccer/800/400',
+                        isPrivate // Add private state
+                    };
+                }
+                return n;
+            });
+            onUpdateNews(updatedNewsList);
+            setEditingId(null);
+        } else {
+            // Creating new news
+            const newPost: NewsPost = {
+                id: Date.now().toString(),
+                title,
+                subject: 'Notícias',
+                coverImage: coverImage || 'https://picsum.photos/seed/soccer/800/400',
+                content,
+                date: new Date().toISOString(),
+                isPrivate // Add private state
+            };
+            onUpdateNews([newPost, ...data.news]);
+        }
+        
         setTitle('');
         setContent('');
+        setCoverImage('');
+        setIsPrivate(false);
+    };
+
+    const handleEditClick = (post: NewsPost) => {
+        setEditingId(post.id);
+        setTitle(post.title);
+        setContent(post.content);
+        setCoverImage(post.coverImage);
+        setIsPrivate(post.isPrivate || false); // Load private state
+        
+        // Scroll to top of editor
+        const editorElement = document.getElementById('news-editor-top');
+        if(editorElement) editorElement.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    const handleCancelEdit = () => {
+        setEditingId(null);
+        setTitle('');
+        setContent('');
+        setCoverImage('');
+        setIsPrivate(false);
+    };
+
+    const handleDeleteNews = (id: string, e?: React.MouseEvent) => {
+        // Stop bubbling if coming from a button click inside another element
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        if (window.confirm('Tem certeza que deseja excluir esta notícia permanentemente?')) {
+            // Ensure ID comparison is safe (String vs Number)
+            const updatedList = data.news.filter(x => String(x.id) !== String(id));
+            onUpdateNews(updatedList);
+            if (editingId === id) handleCancelEdit();
+        }
     };
 
     return (
         <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-             <h3 className="text-xl font-display text-white mb-4">Publicar Notícia</h3>
-             <div className="space-y-4">
-                <input className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white" placeholder="Título" value={title} onChange={e => setTitle(e.target.value)} />
-                <textarea className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white h-32" placeholder="Conteúdo (HTML ok)" value={content} onChange={e => setContent(e.target.value)} />
-                <Button onClick={handleAddNews}>Publicar</Button>
+             <div id="news-editor-top" className="flex justify-between items-center mb-4">
+                 <h3 className="text-xl font-display text-white flex items-center gap-2">
+                    <ClipboardList className="text-strongs-gold"/> {editingId ? 'Editar Notícia' : 'Editor de Notícias'}
+                 </h3>
+                 {editingId && (
+                     <Button variant="ghost" onClick={handleCancelEdit} className="text-xs">Cancelar Edição</Button>
+                 )}
              </div>
+             
+             <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="text-xs text-gray-400 font-bold uppercase block mb-1">Título</label>
+                        <input 
+                            className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-strongs-gold outline-none" 
+                            placeholder="Título da Notícia" 
+                            value={title} 
+                            onChange={e => setTitle(e.target.value)} 
+                        />
+                    </div>
+                    <div>
+                        <label className="text-xs text-gray-400 font-bold uppercase block mb-1">Visibilidade</label>
+                        <button 
+                            onClick={() => setIsPrivate(!isPrivate)}
+                            className={`w-full p-2 rounded border flex items-center justify-center gap-2 transition-all ${isPrivate ? 'bg-red-900/50 border-red-500 text-red-200' : 'bg-green-900/50 border-green-500 text-green-200'}`}
+                        >
+                            {isPrivate ? <Lock size={16} /> : <Globe size={16} />}
+                            <span className="font-bold uppercase text-sm">
+                                {isPrivate ? 'Privada (Apenas Membros)' : 'Pública (Todos)'}
+                            </span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div>
+                    <label className="text-xs text-gray-400 font-bold uppercase block mb-1">Imagem de Capa (URL)</label>
+                    <input 
+                        className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white focus:border-strongs-gold outline-none text-sm" 
+                        placeholder="https://..." 
+                        value={coverImage} 
+                        onChange={e => setCoverImage(e.target.value)} 
+                    />
+                </div>
+
+                <div>
+                    <label className="text-xs text-gray-400 font-bold uppercase block mb-1">Conteúdo</label>
+                    <div className="bg-gray-900 rounded overflow-hidden border border-gray-600">
+                        <ReactQuill 
+                            theme="snow" 
+                            value={content} 
+                            onChange={setContent} 
+                            modules={modules}
+                            className="text-white min-h-[200px]"
+                        />
+                    </div>
+                </div>
+
+                <div className="flex gap-2">
+                    {editingId && <Button variant="ghost" onClick={handleCancelEdit} className="flex-1">Cancelar</Button>}
+                    <Button onClick={handleSaveNews} fullWidth className="flex-1">
+                        {editingId ? 'Salvar Alterações' : 'Publicar'}
+                    </Button>
+                </div>
+             </div>
+
              <div className="mt-8 space-y-2">
+                 <h4 className="text-gray-400 font-bold uppercase text-xs border-b border-gray-700 pb-2 mb-4">
+                    Publicações Recentes
+                 </h4>
                  {data.news.map(n => (
-                     <div key={n.id} className="bg-gray-900 p-2 rounded flex justify-between items-center">
-                         <span className="text-white text-sm">{n.title}</span>
-                         <Button variant="danger" className="p-1" onClick={() => onUpdateNews(data.news.filter(x => x.id !== n.id))}><Trash2 size={12}/></Button>
+                     <div key={n.id} className={`bg-gray-900 p-2 rounded flex justify-between items-center border hover:border-gray-600 transition-all ${editingId === n.id ? 'border-strongs-gold bg-strongs-gold/5' : 'border-gray-800'}`}>
+                         <div className="flex items-center gap-3 overflow-hidden">
+                             <img src={n.coverImage} className="w-10 h-10 object-cover rounded bg-gray-800" alt="" />
+                             <div className="flex flex-col min-w-0">
+                                 <span className="text-white text-sm truncate font-bold">{n.title}</span>
+                                 <span className="text-xs text-gray-500 flex items-center gap-1">
+                                    {n.isPrivate ? <Lock size={10} className="text-red-400"/> : <Globe size={10} className="text-green-400"/>}
+                                    {n.isPrivate ? 'Privada' : 'Pública'}
+                                 </span>
+                             </div>
+                         </div>
+                         <div className="flex gap-3">
+                             <button 
+                                type="button"
+                                onClick={() => handleEditClick(n)}
+                                className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-strongs-darker bg-strongs-gold rounded hover:bg-yellow-400 transition-colors"
+                             >
+                                <Edit3 size={14} />
+                                <span className="hidden sm:inline">Editar</span>
+                             </button>
+                             <button 
+                                type="button"
+                                onClick={(e) => handleDeleteNews(n.id, e)}
+                                className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white bg-red-600/20 border border-red-600/50 rounded hover:bg-red-600 hover:border-red-600 transition-all"
+                             >
+                                <Trash2 size={14} />
+                                <span className="hidden sm:inline">Excluir</span>
+                             </button>
+                         </div>
                      </div>
                  ))}
+                 {data.news.length === 0 && <p className="text-gray-500 italic text-sm">Nenhuma notícia.</p>}
              </div>
         </div>
     );
