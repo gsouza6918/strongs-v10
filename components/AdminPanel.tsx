@@ -477,7 +477,15 @@ const UserManagement: React.FC<{
                                             value={user.role} 
                                             onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
                                             className="bg-gray-950 border border-gray-600 rounded p-1.5 text-xs text-white focus:border-strongs-gold focus:ring-1 focus:ring-strongs-gold outline-none"
-                                            disabled={(!canManageUsers) || (user.role === 'OWNER')}
+                                            // Lógica alterada:
+                                            // 1. Se não tiver permissão -> disabled
+                                            // 2. Se o usuário alvo for OWNER, só pode editar se EU TAMBÉM for OWNER
+                                            // 3. NUNCA posso editar a mim mesmo (para evitar auto-lockout)
+                                            disabled={
+                                                (!canManageUsers) || 
+                                                (user.role === 'OWNER' && currentUser.role !== 'OWNER') || 
+                                                (user.id === currentUser.id)
+                                            }
                                         >
                                             {Object.values(UserRole).map(role => (
                                                 <option key={role} value={role}>{role}</option>
@@ -485,7 +493,12 @@ const UserManagement: React.FC<{
                                         </select>
                                     </td>
                                     <td className="p-4 text-right">
-                                        {canDeleteUsers && user.role !== 'OWNER' && (
+                                        {/* Lógica de exclusão: 
+                                            1. Ter permissão básica
+                                            2. Se o alvo for OWNER, eu preciso ser OWNER
+                                            3. Não posso me excluir
+                                        */}
+                                        {canDeleteUsers && (user.role !== 'OWNER' || currentUser.role === 'OWNER') && user.id !== currentUser.id && (
                                             <button 
                                                 onClick={() => onDeleteUser(user.id)}
                                                 className="text-red-400 hover:text-white hover:bg-red-600 p-2 rounded transition-all"
