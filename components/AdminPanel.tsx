@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import ReactQuill from 'react-quill'; // Importando o Editor Rico
 import { AppData, User, UserRole, Member, Confederation, NewsPost, JoinApplication, ArchivedSeason, Top100Entry, GameResult, Attendance, GlobalSettings, ConfTier } from '../types';
 import { Button } from './Button';
-import { Trash2, ShieldCheck, ClipboardList, UserPlus, History, AlertOctagon, Users, Edit3, X, Save, CheckCircle2, XCircle, MinusCircle, UserMinus, UserCheck, Dumbbell, ArrowLeft, Settings, Lock, Plus, Power, Archive, AlertTriangle, FileEdit, Globe, EyeOff, MessageCircle, ExternalLink } from 'lucide-react';
+import { Trash2, ShieldCheck, ClipboardList, UserPlus, History, AlertOctagon, Users, Edit3, X, Save, CheckCircle2, XCircle, MinusCircle, UserMinus, UserCheck, Dumbbell, ArrowLeft, Settings, Lock, Plus, Power, Archive, AlertTriangle, FileEdit, Globe, EyeOff, MessageCircle, ExternalLink, Shield } from 'lucide-react';
 import { loadData } from '../services/storage';
 
 interface AdminPanelProps {
@@ -25,7 +25,68 @@ interface AdminPanelProps {
 
 // --- SUB-COMPONENTS ---
 
-// 1. Modal for Editing/Creating a Confederation
+// 1. Permissions Editor Modal (New)
+const PermissionsEditor: React.FC<{
+    user: User;
+    confs: Confederation[];
+    onSave: (userId: string, confIds: string[]) => void;
+    onClose: () => void;
+}> = ({ user, confs, onSave, onClose }) => {
+    const [selectedIds, setSelectedIds] = useState<string[]>(user.allowedConfIds || []);
+
+    const toggleConf = (confId: string) => {
+        if (selectedIds.includes(confId)) {
+            setSelectedIds(prev => prev.filter(id => id !== confId));
+        } else {
+            setSelectedIds(prev => [...prev, confId]);
+        }
+    };
+
+    const handleSave = () => {
+        onSave(user.id, selectedIds);
+        onClose();
+    };
+
+    return createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+            <div className="bg-gray-900 w-full max-w-md rounded-xl border border-strongs-gold shadow-2xl flex flex-col p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-start">
+                    <div>
+                        <h3 className="font-display text-2xl text-white uppercase tracking-wider mb-1">
+                            Permissões de Gestor
+                        </h3>
+                        <p className="text-sm text-gray-400">Selecione as confederações que <strong>{user.name}</strong> pode gerenciar.</p>
+                    </div>
+                    <Button variant="ghost" onClick={onClose}><X size={20}/></Button>
+                </div>
+
+                <div className="bg-black/30 p-2 rounded border border-gray-700 max-h-[300px] overflow-y-auto custom-scrollbar">
+                    {confs.map(conf => (
+                        <div 
+                            key={conf.id}
+                            onClick={() => toggleConf(conf.id)}
+                            className={`flex items-center gap-3 p-3 rounded mb-2 cursor-pointer transition-colors border ${selectedIds.includes(conf.id) ? 'bg-strongs-gold/20 border-strongs-gold' : 'bg-gray-800 border-gray-700 hover:bg-gray-700'}`}
+                        >
+                            <div className={`w-5 h-5 rounded border flex items-center justify-center ${selectedIds.includes(conf.id) ? 'bg-strongs-gold border-strongs-gold' : 'border-gray-500'}`}>
+                                {selectedIds.includes(conf.id) && <CheckCircle2 size={14} className="text-black" />}
+                            </div>
+                            <span className={`font-bold ${selectedIds.includes(conf.id) ? 'text-white' : 'text-gray-400'}`}>{conf.name}</span>
+                        </div>
+                    ))}
+                    {confs.length === 0 && <p className="text-center text-gray-500 text-sm">Nenhuma confederação ativa.</p>}
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                    <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+                    <Button onClick={handleSave}>Salvar Permissões</Button>
+                </div>
+            </div>
+        </div>,
+        document.body
+    );
+};
+
+// 2. Modal for Editing/Creating a Confederation
 const ConfEditor: React.FC<{
     conf: Confederation | null, // null means creating new
     onSave: (c: Confederation) => void,
@@ -109,7 +170,7 @@ const ConfEditor: React.FC<{
     );
 };
 
-// 2. New Modal Component for Editing a Member's Score
+// 3. New Modal Component for Editing a Member's Score
 const MemberEditor: React.FC<{ 
     member: Member, 
     activeWeekSetting: number, 
@@ -278,7 +339,7 @@ const MemberEditor: React.FC<{
     );
 };
 
-// 3. Settings Component (For Owner to set Active Week)
+// 4. Settings Component (For Owner to set Active Week)
 const SettingsManagement: React.FC<{
     data: AppData,
     onUpdateSettings: (s: GlobalSettings) => void
@@ -436,13 +497,15 @@ const SeasonsManagement: React.FC<{
     );
 };
 
-// ... (UserManagement stays similar) ...
+// ... (UserManagement updated) ...
 const UserManagement: React.FC<{ 
     data: AppData, 
     currentUser: User, 
     onUpdateUsers: (users: User[]) => void,
     onDeleteUser: (userId: string) => void 
 }> = ({ data, currentUser, onUpdateUsers, onDeleteUser }) => {
+    const [permissionUser, setPermissionUser] = useState<User | null>(null);
+
     const canManageUsers = ['ADMIN', 'OWNER', 'MOD'].includes(currentUser.role);
     const canDeleteUsers = ['ADMIN', 'OWNER'].includes(currentUser.role);
 
@@ -451,11 +514,24 @@ const UserManagement: React.FC<{
         onUpdateUsers(updated);
     };
 
+    const handlePermissionsSave = (userId: string, confIds: string[]) => {
+        const updated = data.users.map(u => u.id === userId ? { ...u, allowedConfIds: confIds } : u);
+        onUpdateUsers(updated);
+    };
+
     return (
         <div className="space-y-4">
+            {permissionUser && (
+                <PermissionsEditor 
+                    user={permissionUser} 
+                    confs={data.confederations.filter(c => c.active !== false)} 
+                    onSave={handlePermissionsSave} 
+                    onClose={() => setPermissionUser(null)} 
+                />
+            )}
+
             <h3 className="font-display text-2xl text-white mb-4 pl-2 border-l-4 border-strongs-gold">Gerenciar Usuários</h3>
             
-            {/* Added solid background container for contrast against busy background image */}
             <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden shadow-2xl">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left text-gray-300">
@@ -473,31 +549,40 @@ const UserManagement: React.FC<{
                                     <td className="p-4 font-medium text-white">{user.username}</td>
                                     <td className="p-4">{user.name}</td>
                                     <td className="p-4">
-                                        <select 
-                                            value={user.role} 
-                                            onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
-                                            className="bg-gray-950 border border-gray-600 rounded p-1.5 text-xs text-white focus:border-strongs-gold focus:ring-1 focus:ring-strongs-gold outline-none"
-                                            // Lógica alterada:
-                                            // 1. Se não tiver permissão -> disabled
-                                            // 2. Se o usuário alvo for OWNER, só pode editar se EU TAMBÉM for OWNER
-                                            // 3. NUNCA posso editar a mim mesmo (para evitar auto-lockout)
-                                            disabled={
-                                                (!canManageUsers) || 
-                                                (user.role === 'OWNER' && currentUser.role !== 'OWNER') || 
-                                                (user.id === currentUser.id)
-                                            }
-                                        >
-                                            {Object.values(UserRole).map(role => (
-                                                <option key={role} value={role}>{role}</option>
-                                            ))}
-                                        </select>
+                                        <div className="flex items-center gap-2">
+                                            <select 
+                                                value={user.role} 
+                                                onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
+                                                className="bg-gray-950 border border-gray-600 rounded p-1.5 text-xs text-white focus:border-strongs-gold focus:ring-1 focus:ring-strongs-gold outline-none"
+                                                disabled={
+                                                    (!canManageUsers) || 
+                                                    (user.role === 'OWNER' && currentUser.role !== 'OWNER') || 
+                                                    (user.id === currentUser.id)
+                                                }
+                                            >
+                                                {Object.values(UserRole).map(role => (
+                                                    <option key={role} value={role}>{role}</option>
+                                                ))}
+                                            </select>
+                                            
+                                            {/* Show permission button for managers */}
+                                            {user.role === 'MANAGER' && canManageUsers && (
+                                                <button 
+                                                    onClick={() => setPermissionUser(user)}
+                                                    className="p-1.5 rounded bg-blue-900/40 text-blue-400 hover:bg-blue-900 border border-blue-900 hover:border-blue-500 transition-colors"
+                                                    title="Gerenciar Confederações Permitidas"
+                                                >
+                                                    <ShieldCheck size={14} />
+                                                </button>
+                                            )}
+                                        </div>
+                                        {user.role === 'MANAGER' && user.allowedConfIds && user.allowedConfIds.length > 0 && (
+                                            <div className="text-[10px] text-gray-500 mt-1 flex flex-wrap gap-1">
+                                                {user.allowedConfIds.length} conf(s) permitida(s)
+                                            </div>
+                                        )}
                                     </td>
                                     <td className="p-4 text-right">
-                                        {/* Lógica de exclusão: 
-                                            1. Ter permissão básica
-                                            2. Se o alvo for OWNER, eu preciso ser OWNER
-                                            3. Não posso me excluir
-                                        */}
                                         {canDeleteUsers && (user.role !== 'OWNER' || currentUser.role === 'OWNER') && user.id !== currentUser.id && (
                                             <button 
                                                 onClick={() => onDeleteUser(user.id)}

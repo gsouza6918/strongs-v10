@@ -22,6 +22,7 @@ export interface User {
   name: string;
   role: UserRole;
   linkedMemberId?: string; // If linked to a game member
+  allowedConfIds?: string[]; // IDs das confederações que o Gestor pode editar
 }
 
 // --- NEW SETTINGS INTERFACE ---
