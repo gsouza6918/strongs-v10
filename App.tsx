@@ -80,7 +80,13 @@ const App: React.FC = () => {
         if (page !== 'news-detail') setSelectedNews(null);
     }
 
-    window.history.pushState({ page, param }, '', url);
+    // Try-catch block to prevent SecurityError in sandboxed environments (like StackBlitz preview)
+    try {
+        window.history.pushState({ page, param }, '', url);
+    } catch (e) {
+        console.warn("Navegação segura: pushState bloqueado pelo ambiente (ignorado).", e);
+    }
+    
     window.scrollTo(0, 0);
   };
 
@@ -906,7 +912,8 @@ const App: React.FC = () => {
             <img src={post.coverImage} className="w-full h-full object-cover" alt={post.title}/>
             <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
             <div className="absolute bottom-0 left-0 p-6 md:p-10 w-full">
-               <Button onClick={() => handleNavigate('home')} variant="ghost" className="text-white border-white/30 hover:bg-white/10 mb-4 text-xs">
+               {/* Botão Superior Aumentado */}
+               <Button onClick={() => handleNavigate('home')} variant="ghost" className="text-white border-white/30 hover:bg-white/10 mb-6 text-sm px-6 py-2 bg-black/20 backdrop-blur-sm">
                   ← Voltar para Início
                </Button>
                <h1 className="text-3xl md:text-5xl font-display font-bold text-white mb-2 leading-tight drop-shadow-lg">{post.title}</h1>
@@ -919,8 +926,15 @@ const App: React.FC = () => {
          </div>
          
          <div className="p-6 md:p-10">
-            <div className="prose prose-invert prose-lg max-w-none text-gray-300">
+            <div className="prose prose-invert prose-lg max-w-none text-gray-300 mb-12">
                <div dangerouslySetInnerHTML={{ __html: post.content }} />
+            </div>
+
+            {/* Botão Inferior Adicionado */}
+            <div className="border-t border-gray-800 pt-8 flex justify-center">
+                <Button onClick={() => handleNavigate('home')} className="text-lg px-8 py-3 shadow-lg shadow-strongs-gold/20 flex items-center gap-2">
+                    <ChevronRight className="rotate-180" size={20}/> Voltar para Início
+                </Button>
             </div>
          </div>
       </div>
