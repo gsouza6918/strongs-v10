@@ -12,14 +12,38 @@ import { Trophy, ChevronRight, Lock, Users, Shield, UserPlus, Send, Briefcase, C
 import { db, isConfigured } from './services/firebase';
 import { ref, onValue, set, remove, update } from "firebase/database";
 
+// --- ROUTING CONFIGURATION ---
+const ROUTES: Record<string, string> = {
+  'home': '/',
+  'confederations': '/confederacoes',
+  'rankings': '/rankings',
+  'recrutamento': '/recrutamento',
+  'admin': '/painel',
+  'login': '/login',
+  'news-detail': '/noticia'
+};
+
 const App: React.FC = () => {
   // Initialize with minimal state, data will come from Firebase
   const [data, setData] = useState<AppData | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null); // New state for save errors
-  const [currentPage, setCurrentPage] = useState('home');
-  const [selectedNews, setSelectedNews] = useState<string | null>(null);
+  
+  // --- ROUTING STATE INIT ---
+  const getInitialPage = () => {
+    const path = window.location.pathname;
+    // Find key where value matches path
+    const entry = Object.entries(ROUTES).find(([key, val]) => val === path);
+    return entry ? entry[0] : 'home';
+  };
+
+  const [currentPage, setCurrentPage] = useState(getInitialPage());
+  const [selectedNews, setSelectedNews] = useState<string | null>(() => {
+     // Check for ID param on load if we are on news page
+     const params = new URLSearchParams(window.location.search);
+     return params.get('id');
+  });
 
   // Auth State (Local session only)
   const [currentUser, setCurrentUser] = useState<AppData['currentUser']>(null);
@@ -41,6 +65,44 @@ const App: React.FC = () => {
   const [registerUser, setRegisterUser] = useState('');
   const [registerPass, setRegisterPass] = useState('');
   const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
+
+  // --- NAVIGATION HANDLER ---
+  const handleNavigate = (page: string, param?: string) => {
+    setCurrentPage(page);
+    let url = ROUTES[page] || '/';
+    
+    // Handle News ID param
+    if (page === 'news-detail' && param) {
+        url += `?id=${param}`;
+        setSelectedNews(param);
+    } else {
+        // Clear selected news if navigating away
+        if (page !== 'news-detail') setSelectedNews(null);
+    }
+
+    window.history.pushState({ page, param }, '', url);
+    window.scrollTo(0, 0);
+  };
+
+  // --- BROWSER BACK/FORWARD LISTENER ---
+  useEffect(() => {
+    const onPopState = () => {
+        const path = window.location.pathname;
+        const entry = Object.entries(ROUTES).find(([key, val]) => val === path);
+        const newPage = entry ? entry[0] : 'home';
+        
+        setCurrentPage(newPage);
+
+        if (newPage === 'news-detail') {
+            const params = new URLSearchParams(window.location.search);
+            setSelectedNews(params.get('id'));
+        }
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
 
   // Helper to force arrays
   const ensureArray = (data: any) => {
@@ -287,7 +349,7 @@ const App: React.FC = () => {
         localStorage.removeItem('strongs_session_uid');
       }
       setLoginError(null);
-      setCurrentPage('home');
+      handleNavigate('home');
     } else {
       setLoginError("Senha ou usuário incorretos");
     }
@@ -312,13 +374,13 @@ const App: React.FC = () => {
     
     // Auto login
     setCurrentUser(newUser);
-    setCurrentPage('home');
+    handleNavigate('home');
   };
 
   const handleLogout = () => {
     localStorage.removeItem('strongs_session_uid');
     setCurrentUser(null);
-    setCurrentPage('login');
+    handleNavigate('login');
   };
 
   const handleDeleteUser = (userId: string) => {
@@ -360,7 +422,7 @@ const App: React.FC = () => {
               </p>
               <Button 
                 className="text-xl px-8 py-3 shadow-lg shadow-strongs-gold/20" 
-                onClick={() => setCurrentPage('rankings')}
+                onClick={() => handleNavigate('rankings')}
               >
                 Ver Rankings <ChevronRight className="inline ml-1"/>
               </Button>
@@ -374,7 +436,7 @@ const App: React.FC = () => {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {visibleNews.map(post => (
-                 <div key={post.id} className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 hover:border-strongs-gold transition-all duration-300 group cursor-pointer relative" onClick={() => { setSelectedNews(post.id); setCurrentPage('news-detail'); }}>
+                 <div key={post.id} className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 hover:border-strongs-gold transition-all duration-300 group cursor-pointer relative" onClick={() => handleNavigate('news-detail', post.id)}>
                    {post.isPrivate && (
                        <div className="absolute top-2 right-2 z-20 bg-red-600 text-white text-[10px] font-bold uppercase px-2 py-1 rounded shadow-md flex items-center gap-1">
                            <Lock size={10} /> Privada
@@ -453,7 +515,7 @@ const App: React.FC = () => {
            <p className="text-xl text-gray-300 mb-8">
              Seu cadastro para uma de nossas confederações foi enviado com sucesso, aguarde um de nossos administradores entrar em contato com você.
            </p>
-           <Button onClick={() => setCurrentPage('home')}>Voltar ao Início</Button>
+           <Button onClick={() => handleNavigate('home')}>Voltar ao Início</Button>
         </div>
       );
     }
@@ -714,7 +776,7 @@ const App: React.FC = () => {
                       
                       {/* Footer Section */}
                       <div className="p-4 border-t border-white/10 bg-black/40 backdrop-blur-md text-center mt-auto">
-                         <Button variant="ghost" className="text-xs w-full hover:bg-white/10" onClick={() => setCurrentPage('rankings')}>
+                         <Button variant="ghost" className="text-xs w-full hover:bg-white/10" onClick={() => handleNavigate('rankings')}>
                             Ver Performance no Ranking
                          </Button>
                       </div>
@@ -834,7 +896,7 @@ const App: React.FC = () => {
     if (!post) return (
        <div className="text-center py-20">
           <h2 className="text-2xl text-white font-bold">Notícia não encontrada.</h2>
-          <Button onClick={() => setCurrentPage('home')} className="mt-4">Voltar</Button>
+          <Button onClick={() => handleNavigate('home')} className="mt-4">Voltar</Button>
        </div>
     );
 
@@ -844,7 +906,7 @@ const App: React.FC = () => {
             <img src={post.coverImage} className="w-full h-full object-cover" alt={post.title}/>
             <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
             <div className="absolute bottom-0 left-0 p-6 md:p-10 w-full">
-               <Button onClick={() => setCurrentPage('home')} variant="ghost" className="text-white border-white/30 hover:bg-white/10 mb-4 text-xs">
+               <Button onClick={() => handleNavigate('home')} variant="ghost" className="text-white border-white/30 hover:bg-white/10 mb-4 text-xs">
                   ← Voltar para Início
                </Button>
                <h1 className="text-3xl md:text-5xl font-display font-bold text-white mb-2 leading-tight drop-shadow-lg">{post.title}</h1>
@@ -919,7 +981,7 @@ const App: React.FC = () => {
   return (
     <Layout 
       currentUser={currentUser} 
-      onNavigate={setCurrentPage} 
+      onNavigate={handleNavigate} 
       currentPage={currentPage}
       onLogout={handleLogout}
       confederations={data.confederations}
