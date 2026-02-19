@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import ReactQuill from 'react-quill'; // Importando o Editor Rico
 import { AppData, User, UserRole, Member, Confederation, NewsPost, JoinApplication, ArchivedSeason, Top100Entry, GameResult, Attendance, GlobalSettings, ConfTier } from '../types';
 import { Button } from './Button';
-import { Trash2, ShieldCheck, ClipboardList, UserPlus, History, AlertOctagon, Users, Edit3, X, Save, CheckCircle2, XCircle, MinusCircle, UserMinus, UserCheck, Dumbbell, ArrowLeft, Settings, Lock, Plus, Power, Archive, AlertTriangle, FileEdit, Globe, EyeOff } from 'lucide-react';
+import { Trash2, ShieldCheck, ClipboardList, UserPlus, History, AlertOctagon, Users, Edit3, X, Save, CheckCircle2, XCircle, MinusCircle, UserMinus, UserCheck, Dumbbell, ArrowLeft, Settings, Lock, Plus, Power, Archive, AlertTriangle, FileEdit, Globe, EyeOff, MessageCircle, ExternalLink } from 'lucide-react';
 import { loadData } from '../services/storage';
 
 interface AdminPanelProps {
@@ -887,20 +887,111 @@ const NewsManagement: React.FC<{ data: AppData, onUpdateNews: (n: NewsPost[]) =>
 
 // ... JoinRequestsManagement remains same logic, just styling update if needed ...
 const JoinRequestsManagement: React.FC<{ data: AppData, onUpdateJoinApps: (a: JoinApplication[]) => void }> = ({ data, onUpdateJoinApps }) => {
+    
+    const toggleStatus = (app: JoinApplication) => {
+        const newStatus = app.status === 'ANSWERED' ? 'PENDING' : 'ANSWERED';
+        const updated = data.joinApplications.map(a => 
+            a.id === app.id ? { ...a, status: newStatus } : a
+        );
+        onUpdateJoinApps(updated);
+    };
+
+    const deleteRequest = (id: string) => {
+        if(confirm("Excluir solicitação permanentemente?")) {
+            const updated = data.joinApplications.filter(a => a.id !== id);
+            onUpdateJoinApps(updated);
+        }
+    }
+
+    // Sort: Pending first, then by date (newest first)
+    const sortedApps = [...data.joinApplications].sort((a, b) => {
+        // Priority to PENDING
+        if (a.status !== b.status) {
+            return a.status === 'PENDING' ? -1 : 1;
+        }
+        // Then by date
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
+
     return (
         <div className="space-y-4">
-             {data.joinApplications.map(app => (
-                 <div key={app.id} className="bg-gray-800 p-4 rounded border-l-4 border-strongs-gold">
-                     <div className="font-bold text-white">{app.name}</div>
-                     <div className="text-gray-400 text-sm">{app.whatsapp}</div>
-                     <div className="flex gap-4 mt-2 text-xs text-gray-500">
-                        <span>Greens: {app.greens}</span>
-                        <span>Tokens: {app.tokens}</span>
-                        <span>%: {app.teamPercentage}</span>
+             {sortedApps.map(app => (
+                 <div 
+                    key={app.id} 
+                    className={`bg-gray-800 p-4 rounded border-l-4 transition-all ${
+                        app.status === 'ANSWERED' 
+                        ? 'border-gray-600 opacity-60' 
+                        : 'border-strongs-gold'
+                    }`}
+                 >
+                     <div className="flex justify-between items-start mb-2">
+                         <div>
+                             <div className="font-bold text-white flex items-center gap-2">
+                                {app.name}
+                                {app.status === 'PENDING' && <span className="text-[10px] bg-yellow-600 text-white px-1.5 rounded uppercase">Pendente</span>}
+                                {app.status === 'ANSWERED' && <span className="text-[10px] bg-green-900 text-green-200 px-1.5 rounded uppercase">Respondida</span>}
+                             </div>
+                             <div className="text-xs text-gray-500">{new Date(app.date).toLocaleDateString()}</div>
+                         </div>
+                         <button onClick={() => deleteRequest(app.id)} className="text-gray-600 hover:text-red-500"><Trash2 size={16}/></button>
+                     </div>
+
+                     {/* Stats Grid */}
+                     <div className="grid grid-cols-3 gap-2 mb-4 bg-black/20 p-2 rounded text-xs text-gray-300">
+                        <div className="flex flex-col items-center">
+                            <span className="text-gray-500 uppercase text-[10px]">Greens</span>
+                            <span className="font-bold text-green-400">{app.greens}</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <span className="text-gray-500 uppercase text-[10px]">Tokens</span>
+                            <span className="font-bold text-yellow-400">{app.tokens}</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <span className="text-gray-500 uppercase text-[10px]">Time %</span>
+                            <span className="font-bold text-blue-400">{app.teamPercentage}%</span>
+                        </div>
+                     </div>
+
+                     {/* Has attributed? */}
+                     {app.hasAttributedPlayers && (
+                         <div className="mb-4 text-xs bg-yellow-900/20 text-yellow-200 p-2 rounded border border-yellow-700/30 flex items-center gap-2">
+                             <AlertTriangle size={12} />
+                             Possui <strong>{app.attributedPlayersCount}</strong> jogadores atributados.
+                         </div>
+                     )}
+
+                     {/* Action Buttons Row */}
+                     <div className="flex gap-3 mt-2">
+                         {/* WhatsApp Button */}
+                         <a 
+                            href={`https://wa.me/55${app.whatsapp.replace(/\D/g, '')}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white py-2 rounded text-sm font-bold transition-colors"
+                         >
+                            <MessageCircle size={16} />
+                            <span>WhatsApp</span>
+                         </a>
+
+                         {/* Toggle Status Button */}
+                         <button 
+                            onClick={() => toggleStatus(app)}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded text-sm font-bold transition-colors border ${
+                                app.status === 'ANSWERED' 
+                                ? 'bg-transparent border-gray-500 text-gray-400 hover:bg-gray-700' 
+                                : 'bg-blue-600 border-blue-600 text-white hover:bg-blue-500'
+                            }`}
+                         >
+                            {app.status === 'ANSWERED' ? (
+                                <> <History size={16} /> Reabrir </>
+                            ) : (
+                                <> <CheckCircle2 size={16} /> Marcar Respondida </>
+                            )}
+                         </button>
                      </div>
                  </div>
              ))}
-             {data.joinApplications.length === 0 && <div className="text-gray-500">Nenhuma solicitação.</div>}
+             {data.joinApplications.length === 0 && <div className="text-gray-500 text-center py-8">Nenhuma solicitação encontrada.</div>}
         </div>
     );
 };
