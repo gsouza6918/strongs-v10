@@ -712,11 +712,11 @@ const App: React.FC = () => {
                   {conf.imageUrl ? (
                     <>
                          <div 
-                            className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105 opacity-50 z-0"
+                            className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105 opacity-80 z-0"
                             style={{ backgroundImage: `url(${conf.imageUrl})` }}
                          />
                          {/* Gradient Overlay: Darker at bottom for text, lighter at top for image visibility */}
-                         <div className="absolute inset-0 bg-gradient-to-b from-gray-900/80 via-gray-900/80 to-black/95 z-0" />
+                         <div className="absolute inset-0 bg-gradient-to-b from-gray-900/70 via-gray-900/90 to-black/95 z-0" />
                     </>
                   ) : (
                     <div className="absolute inset-0 bg-gray-900 z-0" />

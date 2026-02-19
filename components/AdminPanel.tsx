@@ -652,6 +652,12 @@ const ConfManagement: React.FC<{
     const selectedConfName = data.confederations.find(c => c.id === selectedConfId)?.name;
     const isOwnerOrAdmin = ['OWNER', 'ADMIN'].includes(currentUser.role);
 
+    // Sorting logic: Active first, Inactive last
+    const sortedConfs = [...data.confederations].sort((a, b) => {
+        if (a.active === b.active) return 0;
+        return a.active ? -1 : 1;
+    });
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
              {/* Member Edit Modal */}
@@ -689,7 +695,7 @@ const ConfManagement: React.FC<{
                     )}
                 </div>
                 <div className="space-y-2">
-                    {data.confederations.map(conf => (
+                    {sortedConfs.map(conf => (
                         <div 
                             key={conf.id} 
                             className={`p-3 rounded border transition-colors relative group ${selectedConfId === conf.id ? 'border-strongs-gold bg-strongs-gold/10' : 'border-gray-700 hover:bg-gray-700'} ${!conf.active ? 'opacity-50' : ''}`}
