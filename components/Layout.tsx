@@ -88,7 +88,7 @@ export const Layout: React.FC<LayoutProps> = ({
             <NavItem page="home" icon={Home} label="Início" />
             <NavItem page="confederations" icon={Users} label="Confederações" />
             <NavItem page="rankings" icon={Trophy} label="Rankings" />
-            <NavItem page="join-us" icon={UserPlus} label="Inscreva-se em uma confederação" />
+            <NavItem page="recrutamento" icon={UserPlus} label="Recrutamento" />
             {isAdminOrMod && <NavItem page="admin" icon={Shield} label="Painel" />}
             
             {currentUser ? (
@@ -123,7 +123,7 @@ export const Layout: React.FC<LayoutProps> = ({
             <NavItem page="home" icon={Home} label="Início" />
             <NavItem page="confederations" icon={Users} label="Confederações" />
             <NavItem page="rankings" icon={Trophy} label="Rankings" />
-            <NavItem page="join-us" icon={UserPlus} label="Inscreva-se em uma confederação" />
+            <NavItem page="recrutamento" icon={UserPlus} label="Recrutamento" />
             {isAdminOrMod && <NavItem page="admin" icon={Shield} label="Painel" />}
             
             {currentUser ? (
@@ -205,13 +205,13 @@ export const Layout: React.FC<LayoutProps> = ({
 
       {/* Floating Action Button (FAB) for "Quero me Juntar" */}
       <button
-        onClick={() => onNavigate('join-us')}
+        onClick={() => onNavigate('recrutamento')}
         className="fixed bottom-24 right-6 z-40 bg-strongs-gold text-strongs-darker p-4 rounded-full shadow-[0_0_20px_rgba(255,215,0,0.5)] border-2 border-white hover:scale-110 transition-transform duration-300 group"
         title="Inscreva-se em uma confederação"
       >
         <UserPlus size={32} strokeWidth={2.5} />
         <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-black/80 text-white px-3 py-1 rounded text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none font-bold uppercase tracking-wide">
-          Junte-se a nós!
+          Recrutamento
         </span>
       </button>
 

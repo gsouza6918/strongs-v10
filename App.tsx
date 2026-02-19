@@ -936,7 +936,7 @@ const App: React.FC = () => {
       {currentPage === 'home' && HomePage()}
       {currentPage === 'confederations' && <ConfederationsPage />}
       {currentPage === 'rankings' && <Rankings data={data} />}
-      {currentPage === 'join-us' && <JoinUsPage />}
+      {currentPage === 'recrutamento' && <JoinUsPage />}
       {currentPage === 'admin' && currentUser && (
           <AdminPanel 
             data={data} 
