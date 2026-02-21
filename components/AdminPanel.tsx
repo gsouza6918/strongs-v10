@@ -4,8 +4,9 @@ import { createPortal } from 'react-dom';
 import ReactQuill from 'react-quill'; // Importando o Editor Rico
 import { AppData, User, UserRole, Member, Confederation, NewsPost, JoinApplication, ArchivedSeason, Top100Entry, GameResult, Attendance, GlobalSettings, ConfTier } from '../types';
 import { Button } from './Button';
-import { Trash2, ShieldCheck, ClipboardList, UserPlus, History, AlertOctagon, Users, Edit3, X, Save, CheckCircle2, XCircle, MinusCircle, UserMinus, UserCheck, Dumbbell, ArrowLeft, Settings, Lock, Plus, Power, Archive, AlertTriangle, FileEdit, Globe, EyeOff, MessageCircle, ExternalLink, Shield } from 'lucide-react';
+import { Trash2, ShieldCheck, ClipboardList, UserPlus, History, AlertOctagon, Users, Edit3, X, Save, CheckCircle2, XCircle, MinusCircle, UserMinus, UserCheck, Dumbbell, ArrowLeft, Settings, Lock, Plus, Power, Archive, AlertTriangle, FileEdit, Globe, EyeOff, MessageCircle, ExternalLink, Shield, Trophy } from 'lucide-react';
 import { loadData } from '../services/storage';
+import { calculateTop100Points } from '../utils';
 
 interface AdminPanelProps {
   data: AppData;
@@ -1100,8 +1101,154 @@ const JoinRequestsManagement: React.FC<{ data: AppData, onUpdateJoinApps: (a: Jo
     );
 };
 
+// --- NEW COMPONENT: Top 100 Management ---
+const Top100Management: React.FC<{ 
+    data: AppData, 
+    onUpdateTop100: (history: Top100Entry[]) => void 
+}> = ({ data, onUpdateTop100 }) => {
+    const [season, setSeason] = useState('');
+    const [confId, setConfId] = useState('');
+    const [rank, setRank] = useState(1);
+    const [points, setPoints] = useState(calculateTop100Points(1).points);
+    const [bonus, setBonus] = useState(calculateTop100Points(1).bonus);
+
+    const handleRankChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newRank = Number(e.target.value);
+        setRank(newRank);
+        const { points, bonus } = calculateTop100Points(newRank);
+        setPoints(points);
+        setBonus(bonus);
+    };
+
+    const handleAdd = () => {
+        if (!season || !confId) return alert("Preencha a temporada e selecione a confederação.");
+        
+        const newEntry: Top100Entry = {
+            id: Date.now().toString(),
+            season,
+            confId,
+            rank: Number(rank),
+            points: Number(points),
+            bonus: Number(bonus),
+            dateAdded: new Date().toISOString()
+        };
+
+        onUpdateTop100([...data.top100History, newEntry]);
+        
+        // Reset some fields but keep season for easier batch entry
+        setConfId('');
+        setRank(1);
+        const initial = calculateTop100Points(1);
+        setPoints(initial.points);
+        setBonus(initial.bonus);
+    };
+
+    const handleDelete = (id: string) => {
+        if (confirm("Remover este registro do histórico?")) {
+            onUpdateTop100(data.top100History.filter(h => h.id !== id));
+        }
+    };
+
+    // Sort by Season (desc) then Rank (asc)
+    const sortedHistory = [...data.top100History].sort((a, b) => {
+        if (a.season !== b.season) return b.season.localeCompare(a.season);
+        return a.rank - b.rank;
+    });
+
+    return (
+        <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+            <h3 className="font-display text-2xl text-white mb-6 flex items-center gap-2">
+                <Trophy size={24} className="text-strongs-gold"/>
+                Gerenciar Histórico Top 100
+            </h3>
+
+            {/* Add Form */}
+            <div className="bg-gray-900 p-4 rounded border border-gray-700 mb-8">
+                <h4 className="text-white font-bold text-sm uppercase mb-4">Adicionar Registro</h4>
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                    <div className="md:col-span-1">
+                        <label className="text-xs text-gray-500 font-bold uppercase block mb-1">Temporada</label>
+                        <input 
+                            className="w-full bg-black/40 border border-gray-600 rounded p-2 text-white text-sm"
+                            placeholder="Ex: Jan 2024"
+                            value={season}
+                            onChange={e => setSeason(e.target.value)}
+                        />
+                    </div>
+                    <div className="md:col-span-1">
+                        <label className="text-xs text-gray-500 font-bold uppercase block mb-1">Confederação</label>
+                        <select 
+                            className="w-full bg-black/40 border border-gray-600 rounded p-2 text-white text-sm"
+                            value={confId}
+                            onChange={e => setConfId(e.target.value)}
+                        >
+                            <option value="">Selecione...</option>
+                            {data.confederations.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="text-xs text-gray-500 font-bold uppercase block mb-1">Posição (Rank)</label>
+                        <input 
+                            type="number"
+                            className="w-full bg-black/40 border border-gray-600 rounded p-2 text-white text-sm"
+                            value={rank}
+                            onChange={handleRankChange}
+                        />
+                    </div>
+                    <div>
+                        <label className="text-xs text-gray-500 font-bold uppercase block mb-1">Pontos (Auto)</label>
+                        <div className="flex gap-2">
+                            <input 
+                                type="number"
+                                className="w-full bg-black/40 border border-gray-600 rounded p-2 text-white text-sm opacity-70"
+                                value={points}
+                                readOnly
+                                title="Calculado automaticamente: (101 - Rank)"
+                            />
+                            <div className="bg-strongs-gold/20 border border-strongs-gold/50 rounded p-2 text-strongs-gold text-xs font-bold flex items-center justify-center min-w-[60px]" title="Bônus por Posição">
+                                +{bonus}
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <Button onClick={handleAdd} fullWidth>Adicionar</Button>
+                    </div>
+                </div>
+            </div>
+
+            {/* List */}
+            <div className="space-y-2">
+                {sortedHistory.map(entry => {
+                    const confName = data.confederations.find(c => c.id === entry.confId)?.name || 'Confederação Removida';
+                    return (
+                        <div key={entry.id} className="bg-gray-900 p-3 rounded border border-gray-800 flex justify-between items-center hover:border-gray-600 transition-colors">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-strongs-gold text-black font-bold w-8 h-8 rounded flex items-center justify-center text-sm">
+                                    #{entry.rank}
+                                </div>
+                                <div>
+                                    <div className="text-white font-bold">{confName}</div>
+                                    <div className="text-xs text-gray-500 uppercase">{entry.season} • {entry.points} pts</div>
+                                </div>
+                            </div>
+                            <button onClick={() => handleDelete(entry.id)} className="text-gray-600 hover:text-red-500 p-2">
+                                <Trash2 size={16} />
+                            </button>
+                        </div>
+                    );
+                })}
+                {sortedHistory.length === 0 && (
+                    <p className="text-center text-gray-500 italic py-8">Nenhum registro no histórico.</p>
+                )}
+            </div>
+        </div>
+    );
+};
+
 export const AdminPanel: React.FC<AdminPanelProps> = (props) => {
-  const [activeTab, setActiveTab] = useState<'USERS' | 'CONFS' | 'NEWS' | 'JOIN_APPS' | 'SEASONS' | 'CONFIG' | 'RESET'>('USERS');
+  const [activeTab, setActiveTab] = useState<'USERS' | 'CONFS' | 'NEWS' | 'JOIN_APPS' | 'SEASONS' | 'TOP100' | 'CONFIG' | 'RESET'>('USERS');
 
   // Filter tabs for non-owners
   const isOwner = props.currentUser.role === 'OWNER';
@@ -1112,6 +1259,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = (props) => {
     { id: 'NEWS', icon: ClipboardList, label: 'Notícias' },
     { id: 'JOIN_APPS', icon: UserPlus, label: 'Solicitações' },
     { id: 'SEASONS', icon: History, label: 'Arquivo' },
+    { id: 'TOP100', icon: Trophy, label: 'Top 100' },
   ];
 
   if (isOwner) {
@@ -1149,6 +1297,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = (props) => {
          {activeTab === 'NEWS' && <NewsManagement data={props.data} onUpdateNews={props.onUpdateNews} />}
          {activeTab === 'JOIN_APPS' && <JoinRequestsManagement data={props.data} onUpdateJoinApps={props.onUpdateJoinApps} />}
          {activeTab === 'SEASONS' && <SeasonsManagement data={props.data} onUpdateSeasons={props.onUpdateSeasons} onSaveMember={props.onSaveMember} />}
+         {activeTab === 'TOP100' && <Top100Management data={props.data} onUpdateTop100={props.onUpdateTop100} />}
          {activeTab === 'CONFIG' && isOwner && <SettingsManagement data={props.data} onUpdateSettings={props.onUpdateSettings} />}
       </div>
     </div>
