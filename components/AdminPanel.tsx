@@ -1149,10 +1149,9 @@ const Top100Management: React.FC<{
         }
     };
 
-    // Sort by Season (desc) then Rank (asc)
+    // Sort by Date Added (desc) - Newest first
     const sortedHistory = [...data.top100History].sort((a, b) => {
-        if (a.season !== b.season) return b.season.localeCompare(a.season);
-        return a.rank - b.rank;
+        return new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime();
     });
 
     return (
