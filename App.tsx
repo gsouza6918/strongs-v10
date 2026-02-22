@@ -6,7 +6,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { Button } from './components/Button';
 import { AppData, UserRole, ConfTier, JoinApplication, Member, GameResult, Attendance, Confederation, User, NewsPost, Top100Entry, ArchivedSeason, GlobalSettings } from './types';
 import { loadData } from './services/storage'; // We keep this just for DEFAULT_DATA structure
-import { Trophy, ChevronRight, Lock, Users, Shield, UserPlus, Send, Briefcase, Coins, Percent, Smartphone, Star, Loader2, AlertTriangle, CheckSquare, RefreshCw } from 'lucide-react';
+import { Trophy, ChevronRight, ChevronDown, Lock, Users, Shield, UserPlus, Send, Briefcase, Coins, Percent, Smartphone, Star, Loader2, AlertTriangle, CheckSquare, RefreshCw } from 'lucide-react';
 
 // Firebase Imports
 import { db, isConfigured } from './services/firebase';
@@ -485,6 +485,23 @@ const App: React.FC = () => {
     const [attributedCount, setAttributedCount] = useState('');
     const [submitted, setSubmitted] = useState(false);
 
+    const countries = [
+        { code: 'BR', name: 'Brasil', ddi: '+55', flag: '🇧🇷' },
+        { code: 'PT', name: 'Portugal', ddi: '+351', flag: '🇵🇹' },
+        { code: 'US', name: 'Estados Unidos', ddi: '+1', flag: '🇺🇸' },
+        { code: 'AR', name: 'Argentina', ddi: '+54', flag: '🇦🇷' },
+        { code: 'UY', name: 'Uruguai', ddi: '+598', flag: '🇺🇾' },
+        { code: 'PY', name: 'Paraguai', ddi: '+595', flag: '🇵🇾' },
+        { code: 'GB', name: 'Reino Unido', ddi: '+44', flag: '🇬🇧' },
+        { code: 'ES', name: 'Espanha', ddi: '+34', flag: '🇪🇸' },
+        { code: 'FR', name: 'França', ddi: '+33', flag: '🇫🇷' },
+        { code: 'IT', name: 'Itália', ddi: '+39', flag: '🇮🇹' },
+        { code: 'DE', name: 'Alemanha', ddi: '+49', flag: '🇩🇪' },
+        { code: 'AO', name: 'Angola', ddi: '+244', flag: '🇦🇴' },
+        { code: 'MZ', name: 'Moçambique', ddi: '+258', flag: '🇲🇿' },
+    ];
+    const [selectedCountry, setSelectedCountry] = useState(countries[0]);
+
     const handleSubmit = () => {
       // Validation Logic
       const isAttributedValid = hasAttributed === 'NO' || (hasAttributed === 'YES' && attributedCount !== '');
@@ -500,7 +517,7 @@ const App: React.FC = () => {
         greens: parseInt(greens),
         tokens: parseInt(tokens),
         teamPercentage: parseInt(percent),
-        whatsapp: `(${ddd}) ${phone}`,
+        whatsapp: `${selectedCountry.ddi} (${ddd}) ${phone}`,
         hasAttributedPlayers: hasAttributed === 'YES',
         attributedPlayersCount: hasAttributed === 'YES' ? parseInt(attributedCount) : 0,
         status: 'PENDING',
@@ -607,11 +624,31 @@ const App: React.FC = () => {
               <div>
                 <label className="block text-sm font-bold text-gray-400 mb-2 uppercase">WhatsApp <span className="text-red-500">*</span></label>
                 <div className="flex gap-2">
+                  <div className="relative">
+                      <select
+                        value={selectedCountry.code}
+                        onChange={e => {
+                            const c = countries.find(c => c.code === e.target.value);
+                            if(c) setSelectedCountry(c);
+                        }}
+                        className="appearance-none w-[110px] bg-black/40 border border-gray-600 rounded p-3 pr-8 text-white focus:border-strongs-gold outline-none transition-colors cursor-pointer"
+                      >
+                        {countries.map(c => (
+                            <option key={c.code} value={c.code} className="bg-gray-900 text-white">
+                                {c.flag} {c.ddi}
+                            </option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-400">
+                        <ChevronDown size={14} />
+                      </div>
+                  </div>
+
                   <input 
                     type="text" 
                     value={ddd}
                     onChange={e => setDdd(e.target.value)}
-                    maxLength={2}
+                    maxLength={selectedCountry.code === 'BR' ? 2 : 4}
                     className="w-16 bg-black/40 border border-gray-600 rounded p-3 text-center text-white focus:border-strongs-gold outline-none transition-colors"
                     placeholder="DDD"
                   />

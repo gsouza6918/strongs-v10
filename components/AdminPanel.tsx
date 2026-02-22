@@ -1069,7 +1069,7 @@ const JoinRequestsManagement: React.FC<{ data: AppData, onUpdateJoinApps: (a: Jo
                      <div className="flex gap-3 mt-2">
                          {/* WhatsApp Button */}
                          <a 
-                            href={`https://wa.me/55${app.whatsapp.replace(/\D/g, '')}`} 
+                            href={`https://wa.me/${app.whatsapp.replace(/\D/g, '')}`} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white py-2 rounded text-sm font-bold transition-colors"
