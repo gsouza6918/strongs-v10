@@ -22,6 +22,7 @@ interface AdminPanelProps {
   onUpdateJoinApps: (apps: JoinApplication[]) => void;
   onUpdateSeasons: (seasons: ArchivedSeason[]) => void;
   onUpdateSettings: (settings: GlobalSettings) => void;
+  onUpdateSavedTrainings: (trainings: SavedTraining[]) => void;
   onResetDB: (fullData: AppData) => void;
   onUpdateData: (data: AppData) => void;
 }
@@ -1302,7 +1303,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = (props) => {
          {activeTab === 'JOIN_APPS' && <JoinRequestsManagement data={props.data} onUpdateJoinApps={props.onUpdateJoinApps} />}
          {activeTab === 'SEASONS' && <SeasonsManagement data={props.data} onUpdateSeasons={props.onUpdateSeasons} onSaveMember={props.onSaveMember} />}
          {activeTab === 'TOP100' && <Top100Management data={props.data} onUpdateTop100={props.onUpdateTop100} />}
-         {activeTab === 'TREINOS' && <SavedTrainingsManagement data={props.data} currentUser={props.currentUser} onUpdateData={props.onUpdateData} />}
+         {activeTab === 'TREINOS' && <SavedTrainingsManagement data={props.data} currentUser={props.currentUser} onUpdateData={props.onUpdateData} onUpdateSavedTrainings={props.onUpdateSavedTrainings} />}
          {activeTab === 'CONFIG' && isOwner && <SettingsManagement data={props.data} onUpdateSettings={props.onUpdateSettings} />}
       </div>
     </div>

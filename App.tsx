@@ -5,7 +5,7 @@ import { Rankings } from './components/Rankings';
 import { AdminPanel } from './components/AdminPanel';
 import { TrainingSimulator } from './components/TrainingSimulator';
 import { Button } from './components/Button';
-import { AppData, UserRole, ConfTier, JoinApplication, Member, GameResult, Attendance, Confederation, User, NewsPost, Top100Entry, ArchivedSeason, GlobalSettings } from './types';
+import { AppData, UserRole, ConfTier, JoinApplication, Member, GameResult, Attendance, Confederation, User, NewsPost, Top100Entry, ArchivedSeason, GlobalSettings, SavedTraining } from './types';
 import { loadData } from './services/storage'; // We keep this just for DEFAULT_DATA structure
 import { Trophy, ChevronRight, ChevronDown, Lock, Users, Shield, UserPlus, Send, Briefcase, Coins, Percent, Smartphone, Star, Loader2, AlertTriangle, CheckSquare, RefreshCw } from 'lucide-react';
 
@@ -203,6 +203,7 @@ const App: React.FC = () => {
                 top100History: ensureArray(val.top100History),
                 joinApplications: ensureArray(val.joinApplications),
                 archivedSeasons: ensureArray(val.archivedSeasons),
+                savedTrainings: ensureArray(val.savedTrainings),
                 settings: val.settings || { activeWeek: 0 },
                 currentUser: sessionUser 
             };
@@ -334,6 +335,12 @@ const App: React.FC = () => {
       if (!db) return;
       const payload = sanitizeForFirebase(settings);
       await set(ref(db, 'strongs_db/settings'), payload);
+  };
+
+  const handleUpdateSavedTrainings = async (trainings: SavedTraining[]) => {
+      if (!db) return;
+      const payload = sanitizeForFirebase(trainings);
+      await set(ref(db, 'strongs_db/savedTrainings'), payload);
   };
 
   // Special case: Resetting DB (Dangerous, keeps root write but only for owner)
@@ -1052,7 +1059,7 @@ const App: React.FC = () => {
       {currentPage === 'confederations' && <ConfederationsPage />}
       {currentPage === 'rankings' && <Rankings data={data} />}
       {currentPage === 'recrutamento' && <JoinUsPage />}
-      {currentPage === 'simulador' && <TrainingSimulator currentUser={currentUser} data={data} onDataChange={setData} />}
+      {currentPage === 'simulador' && <TrainingSimulator currentUser={currentUser} data={data} onDataChange={setData} onUpdateSavedTrainings={handleUpdateSavedTrainings} />}
       {currentPage === 'admin' && currentUser && (
           <AdminPanel 
             data={data} 
@@ -1067,6 +1074,7 @@ const App: React.FC = () => {
             onUpdateJoinApps={handleUpdateJoinApps}
             onUpdateSeasons={handleUpdateSeasons}
             onUpdateSettings={handleUpdateSettings} // Pass new settings handler
+            onUpdateSavedTrainings={handleUpdateSavedTrainings}
             onResetDB={handleResetDB}
             onUpdateData={setData}
           />

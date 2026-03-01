@@ -7,9 +7,10 @@ interface SavedTrainingsManagementProps {
   data: AppData;
   currentUser: User;
   onUpdateData: (data: AppData) => void;
+  onUpdateSavedTrainings?: (trainings: SavedTraining[]) => void;
 }
 
-export const SavedTrainingsManagement: React.FC<SavedTrainingsManagementProps> = ({ data, currentUser, onUpdateData }) => {
+export const SavedTrainingsManagement: React.FC<SavedTrainingsManagementProps> = ({ data, currentUser, onUpdateData, onUpdateSavedTrainings }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const userTrainings = (data.savedTrainings || []).filter(t => t.userId === currentUser.id);
@@ -21,12 +22,16 @@ export const SavedTrainingsManagement: React.FC<SavedTrainingsManagementProps> =
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir este treino salvo?')) {
+      const newSavedTrainings = (data.savedTrainings || []).filter(t => t.id !== id);
       const updatedData = {
         ...data,
-        savedTrainings: (data.savedTrainings || []).filter(t => t.id !== id)
+        savedTrainings: newSavedTrainings
       };
       await saveData(updatedData);
       onUpdateData(updatedData);
+      if (onUpdateSavedTrainings) {
+        onUpdateSavedTrainings(newSavedTrainings);
+      }
     }
   };
 

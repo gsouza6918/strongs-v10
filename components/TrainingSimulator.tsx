@@ -77,7 +77,7 @@ const DRILLS = {
   ]
 };
 
-export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, onDataChange: (d: any) => void }> = ({ currentUser, data, onDataChange }) => {
+export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, onDataChange: (d: any) => void, onUpdateSavedTrainings?: (trainings: SavedTraining[]) => Promise<void> }> = ({ currentUser, data, onDataChange, onUpdateSavedTrainings }) => {
   const [pos1, setPos1] = useState<Position>('NONE');
   const [pos2, setPos2] = useState<Position>('NONE');
   const [pos3, setPos3] = useState<Position>('NONE');
@@ -370,13 +370,17 @@ export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, 
         createdAt: Date.now()
       };
 
+      const newSavedTrainings = [...(data.savedTrainings || []), newSavedTraining];
       const updatedData = {
         ...data,
-        savedTrainings: [...(data.savedTrainings || []), newSavedTraining]
+        savedTrainings: newSavedTrainings
       };
 
       await saveData(updatedData);
       await onDataChange(updatedData);
+      if (onUpdateSavedTrainings) {
+        await onUpdateSavedTrainings(newSavedTrainings);
+      }
       setSaveName('');
       alert('Treino salvo com sucesso!');
     } catch (error) {
