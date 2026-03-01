@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { UserRole, User, Confederation, ConfTier } from '../types';
-import { Menu, X, LogOut, Shield, User as UserIcon, Trophy, Home, Newspaper, Users, Circle, UserPlus } from 'lucide-react';
+import { Menu, X, LogOut, Shield, User as UserIcon, Trophy, Home, Newspaper, Users, Circle, UserPlus, Calculator } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -88,8 +88,9 @@ export const Layout: React.FC<LayoutProps> = ({
             <NavItem page="home" icon={Home} label="Início" />
             <NavItem page="confederations" icon={Users} label="Confederações" />
             <NavItem page="rankings" icon={Trophy} label="Rankings" />
+            <NavItem page="simulador" icon={Calculator} label="Simulador" />
             <NavItem page="recrutamento" icon={UserPlus} label="Recrutamento" />
-            {isAdminOrMod && <NavItem page="admin" icon={Shield} label="Painel" />}
+            {currentUser && <NavItem page="admin" icon={Shield} label={isAdminOrMod ? "Painel Admin" : "Meu Painel"} />}
             
             {currentUser ? (
               <div className="ml-4 flex items-center space-x-4 border-l border-gray-700 pl-4">
@@ -123,8 +124,9 @@ export const Layout: React.FC<LayoutProps> = ({
             <NavItem page="home" icon={Home} label="Início" />
             <NavItem page="confederations" icon={Users} label="Confederações" />
             <NavItem page="rankings" icon={Trophy} label="Rankings" />
+            <NavItem page="simulador" icon={Calculator} label="Simulador" />
             <NavItem page="recrutamento" icon={UserPlus} label="Recrutamento" />
-            {isAdminOrMod && <NavItem page="admin" icon={Shield} label="Painel" />}
+            {currentUser && <NavItem page="admin" icon={Shield} label={isAdminOrMod ? "Painel Admin" : "Meu Painel"} />}
             
             {currentUser ? (
               <div className="pt-4 border-t border-gray-800 mt-2">

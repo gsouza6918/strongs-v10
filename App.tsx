@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from './components/Layout';
 import { Rankings } from './components/Rankings';
 import { AdminPanel } from './components/AdminPanel';
+import { TrainingSimulator } from './components/TrainingSimulator';
 import { Button } from './components/Button';
 import { AppData, UserRole, ConfTier, JoinApplication, Member, GameResult, Attendance, Confederation, User, NewsPost, Top100Entry, ArchivedSeason, GlobalSettings } from './types';
 import { loadData } from './services/storage'; // We keep this just for DEFAULT_DATA structure
@@ -18,6 +19,7 @@ const ROUTES: Record<string, string> = {
   'confederations': '/confederacoes',
   'rankings': '/rankings',
   'recrutamento': '/recrutamento',
+  'simulador': '/simulador',
   'admin': '/painel',
   'login': '/login',
   'news-detail': '/noticia'
@@ -1050,6 +1052,7 @@ const App: React.FC = () => {
       {currentPage === 'confederations' && <ConfederationsPage />}
       {currentPage === 'rankings' && <Rankings data={data} />}
       {currentPage === 'recrutamento' && <JoinUsPage />}
+      {currentPage === 'simulador' && <TrainingSimulator currentUser={currentUser} data={data} onDataChange={setData} />}
       {currentPage === 'admin' && currentUser && (
           <AdminPanel 
             data={data} 
@@ -1065,6 +1068,7 @@ const App: React.FC = () => {
             onUpdateSeasons={handleUpdateSeasons}
             onUpdateSettings={handleUpdateSettings} // Pass new settings handler
             onResetDB={handleResetDB}
+            onUpdateData={setData}
           />
       )}
       {currentPage === 'login' && LoginPage()}

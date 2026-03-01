@@ -1,0 +1,258 @@
+{
+  "drills": [
+    "Marcar Homem a Homem",
+    "Passe, vá e dispare",
+    "Jogada ensaiada",
+    "Tecnica de chute",
+    "Drible de slalom",
+    "Jogo na ponta",
+    "Contra-ataque rapido",
+    "Analise de video",
+    "Cabeceada",
+    "Uma linha de defesa",
+    "Parar o atacante",
+    "Cruzamento defesa",
+    "Pressione o play",
+    "Treino de goleiro",
+    "Controle de Bola",
+    "Jogo de bobinho",
+    "Matada de bola",
+    "Virada de jogo",
+    "Posicionamento",
+    "Passes para o chute",
+    "Entradas",
+    "Aquecimento",
+    "Alongamento",
+    "Carioca com escadas",
+    "Corrida longa",
+    "Corrida ir e vir",
+    "Corrida de obstaculos",
+    "Academia",
+    "Arrancada"
+  ],
+  "difficulties": [
+    "Fácil",
+    "Fácil",
+    "Médio",
+    "Médio",
+    "Difícil",
+    "Difícil",
+    "Muito Difícil",
+    "Muito Fácil",
+    "Fácil",
+    "Médio",
+    "Médio",
+    "Médio",
+    "Difícil",
+    "Difícil",
+    "Muito Fácil",
+    "Fácil",
+    "Fácil",
+    "Médio",
+    "Médio",
+    "Difícil",
+    "Médio",
+    "Muito Fácil",
+    "Fácil",
+    "Fácil",
+    "Médio",
+    "Difícil",
+    "Difícil",
+    "Muito Difícil",
+    "Muito Difícil"
+  ],
+  "skills": [
+    {
+      "name": "Pos   2:",
+      "drills": []
+    },
+    {
+      "name": "Pos   3:",
+      "drills": []
+    },
+    {
+      "name": "Corte",
+      "drills": [
+        "Marcar Homem a Homem",
+        "Parar o atacante",
+        "Pressione o play",
+        "Jogo de bobinho"
+      ]
+    },
+    {
+      "name": "Marcação",
+      "drills": [
+        "Jogada ensaiada",
+        "Uma linha de defesa",
+        "Parar o atacante",
+        "Cruzamento defesa",
+        "Pressione o play",
+        "Entradas"
+      ]
+    },
+    {
+      "name": "Posicionamento",
+      "drills": [
+        "Analise de video",
+        "Cabeceada",
+        "Uma linha de defesa",
+        "Pressione o play",
+        "Jogo de bobinho",
+        "Virada de jogo",
+        "Posicionamento",
+        "Passes para o chute"
+      ]
+    },
+    {
+      "name": "Cabeçada",
+      "drills": [
+        "Jogada ensaiada",
+        "Jogo na ponta",
+        "Cabeceada",
+        "Cruzamento defesa",
+        "Controle de Bola",
+        "Aquecimento"
+      ]
+    },
+    {
+      "name": "Coragem",
+      "drills": [
+        "Analise de video",
+        "Parar o atacante",
+        "Cruzamento defesa",
+        "Pressione o play",
+        "Entradas",
+        "Corrida ir e vir",
+        "Corrida de obstaculos"
+      ]
+    },
+    {
+      "name": "Passe",
+      "drills": [
+        "Passe, vá e dispare",
+        "Drible de slalom",
+        "Contra-ataque rapido",
+        "Cabeceada",
+        "Jogo de bobinho",
+        "Matada de bola",
+        "Virada de jogo",
+        "Passes para o chute"
+      ]
+    },
+    {
+      "name": "Drible",
+      "drills": [
+        "Marcar Homem a Homem",
+        "Drible de slalom",
+        "Parar o atacante",
+        "Controle de Bola",
+        "Matada de bola",
+        "Entradas",
+        "Arrancada"
+      ]
+    },
+    {
+      "name": "Cruzamento",
+      "drills": [
+        "Jogada ensaiada",
+        "Jogo na ponta",
+        "Contra-ataque rapido",
+        "Cruzamento defesa",
+        "Virada de jogo"
+      ]
+    },
+    {
+      "name": "Chute",
+      "drills": [
+        "Passe, vá e dispare",
+        "Jogada ensaiada",
+        "Tecnica de chute",
+        "Jogo na ponta"
+      ]
+    },
+    {
+      "name": "Finalização",
+      "drills": [
+        "Marcar Homem a Homem",
+        "Tecnica de chute",
+        "Jogo na ponta",
+        "Contra-ataque rapido",
+        "Passes para o chute"
+      ]
+    },
+    {
+      "name": "Condicionamento",
+      "drills": [
+        "Drible de slalom",
+        "Jogo de bobinho",
+        "Matada de bola",
+        "Posicionamento",
+        "Aquecimento",
+        "Alongamento",
+        "Corrida longa",
+        "Academia",
+        "Arrancada"
+      ]
+    },
+    {
+      "name": "Força",
+      "drills": [
+        "Tecnica de chute",
+        "Parar o atacante",
+        "Entradas",
+        "Alongamento",
+        "Corrida ir e vir",
+        "Academia"
+      ]
+    },
+    {
+      "name": "Agressividade",
+      "drills": [
+        "Pressione o play",
+        "Jogo de bobinho",
+        "Entradas",
+        "Aquecimento",
+        "Carioca com escadas",
+        "Corrida de obstaculos"
+      ]
+    },
+    {
+      "name": "Velocidade",
+      "drills": [
+        "Passe, vá e dispare",
+        "Drible de slalom",
+        "Virada de jogo",
+        "Posicionamento",
+        "Alongamento",
+        "Carioca com escadas",
+        "Corrida longa",
+        "Corrida ir e vir",
+        "Corrida de obstaculos",
+        "Arrancada"
+      ]
+    },
+    {
+      "name": "Criatividade",
+      "drills": [
+        "Contra-ataque rapido",
+        "Analise de video",
+        "Cabeceada",
+        "Controle de Bola",
+        "Virada de jogo",
+        "Passes para o chute"
+      ]
+    },
+    {
+      "name": "EFICIÊNCIA DO TREINO:",
+      "drills": []
+    },
+    {
+      "name": "MÉDIA DO TREINO:",
+      "drills": []
+    },
+    {
+      "name": "BARRA DE ROLAMENTO:",
+      "drills": []
+    }
+  ]
+}

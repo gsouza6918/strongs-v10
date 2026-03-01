@@ -93,6 +93,39 @@ export interface JoinApplication {
   date: string;
 }
 
+export type PlayerTier = 'NONE' | 'RARO' | 'ELITE' | 'CRAQUE' | 'MESTRE' | 'EPICO' | 'LENDARIO';
+
+export const TIER_ICONS: Record<PlayerTier, string> = {
+  NONE: '',
+  RARO: 'https://i.imgur.com/1y9J04P.png',
+  ELITE: 'https://i.imgur.com/daHSRFA.png',
+  CRAQUE: 'https://i.imgur.com/1XpwC4v.png',
+  MESTRE: 'https://i.imgur.com/Jfk4J6O.png',
+  EPICO: 'https://i.imgur.com/ejZXR29.png',
+  LENDARIO: 'https://i.imgur.com/ZmZS0V5.png'
+};
+
+export const TIER_LABELS: Record<PlayerTier, string> = {
+  NONE: 'Comum',
+  RARO: 'Raro',
+  ELITE: 'Elite',
+  CRAQUE: 'Craque',
+  MESTRE: 'Mestre',
+  EPICO: 'Épico',
+  LENDARIO: 'Lendário'
+};
+
+export interface SavedTraining {
+  id: string;
+  userId: string;
+  name: string;
+  positions: string[];
+  tier?: PlayerTier;
+  baseAttributes: Record<string, number>;
+  drillSteps: { drillName: string, count: number }[];
+  createdAt: number;
+}
+
 export interface ArchivedSeason {
   id: string;
   name: string;
@@ -111,5 +144,6 @@ export interface AppData {
   joinApplications: JoinApplication[];
   archivedSeasons: ArchivedSeason[];
   settings: GlobalSettings; // New Field
+  savedTrainings?: SavedTraining[];
   currentUser: User | null;
 }
