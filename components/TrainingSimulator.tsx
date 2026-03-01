@@ -375,6 +375,7 @@ export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, 
         savedTrainings: [...(data.savedTrainings || []), newSavedTraining]
       };
 
+      await saveData(updatedData);
       await onDataChange(updatedData);
       setSaveName('');
       alert('Treino salvo com sucesso!');
