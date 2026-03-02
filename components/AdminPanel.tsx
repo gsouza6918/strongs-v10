@@ -571,7 +571,6 @@ const UserManagement: React.FC<{
                                                     (!canManageUsers) || 
                                                     (user.role === 'OWNER' && currentUser.role !== 'OWNER') || 
                                                     (user.role === 'ADMIN' && currentUser.role === 'MOD') ||
-                                                    (user.role === 'MOD' && currentUser.role === 'MOD') ||
                                                     (user.id === currentUser.id)
                                                 }
                                             >
@@ -672,15 +671,10 @@ const ConfManagement: React.FC<{
     const isOwnerOrAdmin = ['OWNER', 'ADMIN', 'MOD'].includes(currentUser.role);
 
     // Sorting logic: Active first, Inactive last
-    let sortedConfs = [...data.confederations].sort((a, b) => {
+    const sortedConfs = [...data.confederations].sort((a, b) => {
         if (a.active === b.active) return 0;
         return a.active ? -1 : 1;
     });
-
-    if (currentUser.role === 'MANAGER') {
-        const allowed = currentUser.allowedConfIds || [];
-        sortedConfs = sortedConfs.filter(c => allowed.includes(c.id));
-    }
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
@@ -1271,22 +1265,26 @@ const Top100Management: React.FC<{
 
 export const AdminPanel: React.FC<AdminPanelProps> = (props) => {
   const isOwner = props.currentUser.role === 'OWNER';
-  const isAdminOrMod = props.currentUser.role === 'OWNER' || props.currentUser.role === 'ADMIN' || props.currentUser.role === 'MOD';
-  const isManager = props.currentUser.role === 'MANAGER';
+  const isOwnerOrAdmin = props.currentUser.role === 'OWNER' || props.currentUser.role === 'ADMIN';
+  const isAdminOrMod = isOwnerOrAdmin || props.currentUser.role === 'MOD';
   
-  const [activeTab, setActiveTab] = useState<'USERS' | 'CONFS' | 'NEWS' | 'JOIN_APPS' | 'SEASONS' | 'TOP100' | 'CONFIG' | 'TREINOS' | 'RESET'>(isAdminOrMod || isManager ? 'CONFS' : 'TREINOS');
+  const [activeTab, setActiveTab] = useState<'USERS' | 'CONFS' | 'NEWS' | 'JOIN_APPS' | 'SEASONS' | 'TOP100' | 'CONFIG' | 'TREINOS' | 'RESET'>(isAdminOrMod ? 'USERS' : 'TREINOS');
 
   const allTabs = [
     { id: 'USERS', icon: Users, label: 'Usuários', adminOnly: true },
-    { id: 'CONFS', icon: ShieldCheck, label: 'Confederações', adminOnly: false, managerAllowed: true },
-    { id: 'NEWS', icon: ClipboardList, label: 'Notícias', adminOnly: true },
+    { id: 'CONFS', icon: ShieldCheck, label: 'Confederações', adminOnly: true },
+    { id: 'NEWS', icon: ClipboardList, label: 'Notícias', ownerOrAdminOnly: true },
     { id: 'JOIN_APPS', icon: UserPlus, label: 'Solicitações', adminOnly: true },
-    { id: 'SEASONS', icon: History, label: 'Arquivo', adminOnly: true },
-    { id: 'TOP100', icon: Trophy, label: 'Top 100', adminOnly: true },
+    { id: 'SEASONS', icon: History, label: 'Arquivo', ownerOrAdminOnly: true },
+    { id: 'TOP100', icon: Trophy, label: 'Top 100', ownerOrAdminOnly: true },
     { id: 'TREINOS', icon: Dumbbell, label: 'Treinos Salvos', adminOnly: false },
   ];
 
-  const tabs = allTabs.filter(tab => !tab.adminOnly || isAdminOrMod || (tab.managerAllowed && isManager));
+  const tabs = allTabs.filter(tab => {
+      if (tab.ownerOrAdminOnly) return isOwnerOrAdmin;
+      if (tab.adminOnly) return isAdminOrMod;
+      return true;
+  });
 
   if (isOwner) {
       tabs.push({ id: 'CONFIG', icon: Settings, label: 'Config', adminOnly: true });
