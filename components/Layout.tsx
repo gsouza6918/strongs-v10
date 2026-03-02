@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { UserRole, User, Confederation, ConfTier } from '../types';
-import { Menu, X, LogOut, Shield, User as UserIcon, Trophy, Home, Newspaper, Users, Circle, UserPlus, Calculator } from 'lucide-react';
+import { Menu, X, LogOut, Shield, User as UserIcon, Trophy, Home, Newspaper, Users, Circle, UserPlus, Calculator, Globe } from 'lucide-react';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -22,6 +23,7 @@ export const Layout: React.FC<LayoutProps> = ({
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const { language, setLanguage, t } = useLanguage();
 
   // Filter only active confederations for display in marquee
   const activeConfs = confederations.filter(c => c.active !== false);
@@ -85,13 +87,26 @@ export const Layout: React.FC<LayoutProps> = ({
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center space-x-2">
-            <NavItem page="home" icon={Home} label="Início" />
-            <NavItem page="confederations" icon={Users} label="Confederações" />
-            <NavItem page="rankings" icon={Trophy} label="Rankings" />
-            <NavItem page="simulador" icon={Calculator} label="Simulador" />
-            <NavItem page="recrutamento" icon={UserPlus} label="Recrutamento" />
-            {currentUser && <NavItem page="admin" icon={Shield} label={isAdminOrMod ? "Painel Admin" : "Meu Painel"} />}
+            <NavItem page="home" icon={Home} label={t('nav.home')} />
+            <NavItem page="confederations" icon={Users} label={t('nav.confederations')} />
+            <NavItem page="rankings" icon={Trophy} label={t('nav.rankings')} />
+            <NavItem page="simulador" icon={Calculator} label={t('nav.simulator')} />
+            <NavItem page="recrutamento" icon={UserPlus} label={t('nav.recruitment')} />
+            {currentUser && <NavItem page="admin" icon={Shield} label={isAdminOrMod ? t('nav.adminPanel') : t('nav.myPanel')} />}
             
+            <div className="relative group ml-2">
+              <button className="flex items-center space-x-1 text-gray-300 hover:text-strongs-gold px-2 py-2">
+                <Globe size={20} />
+                <span className="uppercase text-sm font-bold">{language}</span>
+              </button>
+              <div className="absolute right-0 mt-2 w-32 bg-strongs-darker border border-gray-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                <button onClick={() => setLanguage('pt')} className={`block w-full text-left px-4 py-2 text-sm hover:bg-white/5 ${language === 'pt' ? 'text-strongs-gold' : 'text-gray-300'}`}>Português</button>
+                <button onClick={() => setLanguage('en')} className={`block w-full text-left px-4 py-2 text-sm hover:bg-white/5 ${language === 'en' ? 'text-strongs-gold' : 'text-gray-300'}`}>English</button>
+                <button onClick={() => setLanguage('es')} className={`block w-full text-left px-4 py-2 text-sm hover:bg-white/5 ${language === 'es' ? 'text-strongs-gold' : 'text-gray-300'}`}>Español</button>
+                <button onClick={() => setLanguage('id')} className={`block w-full text-left px-4 py-2 text-sm hover:bg-white/5 ${language === 'id' ? 'text-strongs-gold' : 'text-gray-300'}`}>Indonesia</button>
+              </div>
+            </div>
+
             {currentUser ? (
               <div className="ml-4 flex items-center space-x-4 border-l border-gray-700 pl-4">
                 <div className="flex flex-col items-end">
@@ -100,33 +115,46 @@ export const Layout: React.FC<LayoutProps> = ({
                   </span>
                   <span className="text-xs text-gray-400 uppercase">{currentUser.role}</span>
                 </div>
-                <button onClick={onLogout} className="text-gray-400 hover:text-red-400" title="Sair">
+                <button onClick={onLogout} className="text-gray-400 hover:text-red-400" title={t('nav.logout')}>
                   <LogOut size={20} />
                 </button>
               </div>
             ) : (
-              <NavItem page="login" icon={UserIcon} label="Login" />
+              <NavItem page="login" icon={UserIcon} label={t('nav.login')} />
             )}
           </nav>
 
           {/* Mobile Menu Button */}
-          <button 
-            className="md:hidden text-strongs-gold"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
-          </button>
+          <div className="md:hidden flex items-center space-x-4">
+            <div className="relative group">
+              <button className="flex items-center space-x-1 text-gray-300 hover:text-strongs-gold">
+                <Globe size={24} />
+              </button>
+              <div className="absolute right-0 mt-2 w-32 bg-strongs-darker border border-gray-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                <button onClick={() => setLanguage('pt')} className={`block w-full text-left px-4 py-2 text-sm hover:bg-white/5 ${language === 'pt' ? 'text-strongs-gold' : 'text-gray-300'}`}>Português</button>
+                <button onClick={() => setLanguage('en')} className={`block w-full text-left px-4 py-2 text-sm hover:bg-white/5 ${language === 'en' ? 'text-strongs-gold' : 'text-gray-300'}`}>English</button>
+                <button onClick={() => setLanguage('es')} className={`block w-full text-left px-4 py-2 text-sm hover:bg-white/5 ${language === 'es' ? 'text-strongs-gold' : 'text-gray-300'}`}>Español</button>
+                <button onClick={() => setLanguage('id')} className={`block w-full text-left px-4 py-2 text-sm hover:bg-white/5 ${language === 'id' ? 'text-strongs-gold' : 'text-gray-300'}`}>Indonesia</button>
+              </div>
+            </div>
+            <button 
+              className="text-strongs-gold"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Nav */}
         {isMobileMenuOpen && (
           <div className="md:hidden bg-strongs-darker border-b border-gray-800 p-4 space-y-2">
-            <NavItem page="home" icon={Home} label="Início" />
-            <NavItem page="confederations" icon={Users} label="Confederações" />
-            <NavItem page="rankings" icon={Trophy} label="Rankings" />
-            <NavItem page="simulador" icon={Calculator} label="Simulador" />
-            <NavItem page="recrutamento" icon={UserPlus} label="Recrutamento" />
-            {currentUser && <NavItem page="admin" icon={Shield} label={isAdminOrMod ? "Painel Admin" : "Meu Painel"} />}
+            <NavItem page="home" icon={Home} label={t('nav.home')} />
+            <NavItem page="confederations" icon={Users} label={t('nav.confederations')} />
+            <NavItem page="rankings" icon={Trophy} label={t('nav.rankings')} />
+            <NavItem page="simulador" icon={Calculator} label={t('nav.simulator')} />
+            <NavItem page="recrutamento" icon={UserPlus} label={t('nav.recruitment')} />
+            {currentUser && <NavItem page="admin" icon={Shield} label={isAdminOrMod ? t('nav.adminPanel') : t('nav.myPanel')} />}
             
             {currentUser ? (
               <div className="pt-4 border-t border-gray-800 mt-2">
@@ -138,11 +166,11 @@ export const Layout: React.FC<LayoutProps> = ({
                   onClick={onLogout}
                   className="w-full flex items-center justify-center space-x-2 bg-red-900/30 text-red-400 py-2 rounded"
                  >
-                   <LogOut size={16} /> <span>Sair</span>
+                   <LogOut size={16} /> <span>{t('nav.logout')}</span>
                  </button>
               </div>
             ) : (
-              <NavItem page="login" icon={UserIcon} label="Entrar / Cadastrar" />
+              <NavItem page="login" icon={UserIcon} label={t('nav.login')} />
             )}
           </div>
         )}

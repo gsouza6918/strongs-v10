@@ -513,6 +513,15 @@ const UserManagement: React.FC<{
     const canManageUsers = ['ADMIN', 'OWNER', 'MOD'].includes(currentUser.role);
     const canDeleteUsers = ['ADMIN', 'OWNER'].includes(currentUser.role);
 
+    const getAvailableRoles = () => {
+        if (currentUser.role === 'OWNER') return Object.values(UserRole);
+        if (currentUser.role === 'ADMIN') return Object.values(UserRole).filter(r => r !== 'OWNER');
+        if (currentUser.role === 'MOD') return ['USER', 'MEMBER', 'MANAGER'] as UserRole[];
+        return [];
+    };
+
+    const availableRoles = getAvailableRoles();
+
     const handleRoleChange = (userId: string, newRole: UserRole) => {
         const updated = data.users.map(u => u.id === userId ? { ...u, role: newRole } : u);
         onUpdateUsers(updated);
@@ -561,12 +570,18 @@ const UserManagement: React.FC<{
                                                 disabled={
                                                     (!canManageUsers) || 
                                                     (user.role === 'OWNER' && currentUser.role !== 'OWNER') || 
+                                                    (user.role === 'ADMIN' && currentUser.role === 'MOD') ||
+                                                    (user.role === 'MOD' && currentUser.role === 'MOD') ||
                                                     (user.id === currentUser.id)
                                                 }
                                             >
-                                                {Object.values(UserRole).map(role => (
+                                                {availableRoles.map(role => (
                                                     <option key={role} value={role}>{role}</option>
                                                 ))}
+                                                {/* Ensure current role is shown even if not in availableRoles (e.g. MOD viewing ADMIN) */}
+                                                {!availableRoles.includes(user.role) && (
+                                                    <option key={user.role} value={user.role} disabled>{user.role}</option>
+                                                )}
                                             </select>
                                             
                                             {/* Show permission button for managers */}
@@ -654,13 +669,18 @@ const ConfManagement: React.FC<{
     };
 
     const selectedConfName = data.confederations.find(c => c.id === selectedConfId)?.name;
-    const isOwnerOrAdmin = ['OWNER', 'ADMIN'].includes(currentUser.role);
+    const isOwnerOrAdmin = ['OWNER', 'ADMIN', 'MOD'].includes(currentUser.role);
 
     // Sorting logic: Active first, Inactive last
-    const sortedConfs = [...data.confederations].sort((a, b) => {
+    let sortedConfs = [...data.confederations].sort((a, b) => {
         if (a.active === b.active) return 0;
         return a.active ? -1 : 1;
     });
+
+    if (currentUser.role === 'MANAGER') {
+        const allowed = currentUser.allowedConfIds || [];
+        sortedConfs = sortedConfs.filter(c => allowed.includes(c.id));
+    }
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
@@ -1251,13 +1271,14 @@ const Top100Management: React.FC<{
 
 export const AdminPanel: React.FC<AdminPanelProps> = (props) => {
   const isOwner = props.currentUser.role === 'OWNER';
-  const isAdminOrMod = props.currentUser.role === 'OWNER' || props.currentUser.role === 'ADMIN' || props.currentUser.role === 'MODERATOR';
+  const isAdminOrMod = props.currentUser.role === 'OWNER' || props.currentUser.role === 'ADMIN' || props.currentUser.role === 'MOD';
+  const isManager = props.currentUser.role === 'MANAGER';
   
-  const [activeTab, setActiveTab] = useState<'USERS' | 'CONFS' | 'NEWS' | 'JOIN_APPS' | 'SEASONS' | 'TOP100' | 'CONFIG' | 'TREINOS' | 'RESET'>(isAdminOrMod ? 'USERS' : 'TREINOS');
+  const [activeTab, setActiveTab] = useState<'USERS' | 'CONFS' | 'NEWS' | 'JOIN_APPS' | 'SEASONS' | 'TOP100' | 'CONFIG' | 'TREINOS' | 'RESET'>(isAdminOrMod || isManager ? 'CONFS' : 'TREINOS');
 
   const allTabs = [
     { id: 'USERS', icon: Users, label: 'Usuários', adminOnly: true },
-    { id: 'CONFS', icon: ShieldCheck, label: 'Confederações', adminOnly: true },
+    { id: 'CONFS', icon: ShieldCheck, label: 'Confederações', adminOnly: false, managerAllowed: true },
     { id: 'NEWS', icon: ClipboardList, label: 'Notícias', adminOnly: true },
     { id: 'JOIN_APPS', icon: UserPlus, label: 'Solicitações', adminOnly: true },
     { id: 'SEASONS', icon: History, label: 'Arquivo', adminOnly: true },
@@ -1265,7 +1286,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = (props) => {
     { id: 'TREINOS', icon: Dumbbell, label: 'Treinos Salvos', adminOnly: false },
   ];
 
-  const tabs = allTabs.filter(tab => !tab.adminOnly || isAdminOrMod);
+  const tabs = allTabs.filter(tab => !tab.adminOnly || isAdminOrMod || (tab.managerAllowed && isManager));
 
   if (isOwner) {
       tabs.push({ id: 'CONFIG', icon: Settings, label: 'Config', adminOnly: true });

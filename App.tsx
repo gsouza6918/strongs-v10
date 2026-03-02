@@ -8,6 +8,7 @@ import { Button } from './components/Button';
 import { AppData, UserRole, ConfTier, JoinApplication, Member, GameResult, Attendance, Confederation, User, NewsPost, Top100Entry, ArchivedSeason, GlobalSettings, SavedTraining } from './types';
 import { loadData } from './services/storage'; // We keep this just for DEFAULT_DATA structure
 import { Trophy, ChevronRight, ChevronDown, Lock, Users, Shield, UserPlus, Send, Briefcase, Coins, Percent, Smartphone, Star, Loader2, AlertTriangle, CheckSquare, RefreshCw } from 'lucide-react';
+import { useLanguage } from './i18n/LanguageContext';
 
 // Firebase Imports
 import { db, isConfigured } from './services/firebase';
@@ -26,6 +27,7 @@ const ROUTES: Record<string, string> = {
 };
 
 const App: React.FC = () => {
+  const { t } = useLanguage();
   // Initialize with minimal state, data will come from Firebase
   const [data, setData] = useState<AppData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -430,16 +432,16 @@ const App: React.FC = () => {
           <div className="text-center py-12 px-4 bg-gradient-to-b from-transparent to-black/40 rounded-3xl border border-strongs-gold/20 relative overflow-hidden">
             <div className="relative z-10">
               <h1 className="text-5xl md:text-7xl font-display font-bold text-white mb-4 drop-shadow-lg">
-                BEM VINDO À <span className="text-strongs-gold">ELITE</span>
+                {t('home.welcome')} <span className="text-strongs-gold">{t('home.elite')}</span>
               </h1>
               <p className="text-gray-300 text-lg md:text-xl max-w-2xl mx-auto mb-8 font-light">
-                Acompanhe rankings, gerencie sua confederação e faça parte da história da Strongs Brazil.
+                {t('home.subtitle')}
               </p>
               <Button 
                 className="text-xl px-8 py-3 shadow-lg shadow-strongs-gold/20" 
                 onClick={() => handleNavigate('rankings')}
               >
-                Ver Rankings <ChevronRight className="inline ml-1"/>
+                {t('home.viewRankings')} <ChevronRight className="inline ml-1"/>
               </Button>
             </div>
           </div>
@@ -447,14 +449,14 @@ const App: React.FC = () => {
           {/* News Feed */}
           <div>
             <h2 className="text-3xl font-display font-bold text-white mb-6 pl-4 border-l-4 border-strongs-gold">
-              Últimas Notícias
+              {t('home.latestNews')}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {visibleNews.map(post => (
                  <div key={post.id} className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 hover:border-strongs-gold transition-all duration-300 group cursor-pointer relative" onClick={() => handleNavigate('news-detail', post.id)}>
                    {post.isPrivate && (
                        <div className="absolute top-2 right-2 z-20 bg-red-600 text-white text-[10px] font-bold uppercase px-2 py-1 rounded shadow-md flex items-center gap-1">
-                           <Lock size={10} /> Privada
+                           <Lock size={10} /> {t('home.private')}
                        </div>
                    )}
                    <div className="h-48 overflow-hidden relative">
@@ -466,15 +468,15 @@ const App: React.FC = () => {
                      <h3 className="text-xl font-bold text-white mb-2 leading-tight group-hover:text-strongs-gold transition-colors">{post.title}</h3>
                      <p className="text-gray-400 text-sm line-clamp-3">{post.subject}</p>
                      <div className="mt-4 text-strongs-gold text-sm font-bold uppercase tracking-wider flex items-center">
-                       Ler Mais <ChevronRight size={16} />
+                       {t('home.readMore')} <ChevronRight size={16} />
                      </div>
                    </div>
                  </div>
               ))}
               {visibleNews.length === 0 && (
                   <div className="col-span-3 text-center py-10">
-                      <p className="text-gray-500">Nenhuma notícia publicada ainda.</p>
-                      {!currentUser && <p className="text-xs text-gray-600 mt-2">Faça login para ver notícias exclusivas.</p>}
+                      <p className="text-gray-500">{t('home.noNews')}</p>
+                      {!currentUser && <p className="text-xs text-gray-600 mt-2">{t('home.loginForMore')}</p>}
                   </div>
               )}
             </div>
