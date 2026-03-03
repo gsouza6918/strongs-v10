@@ -676,6 +676,15 @@ const ConfManagement: React.FC<{
         return a.active ? -1 : 1;
     });
 
+    // Filter confederations based on user role and allowedConfIds
+    const visibleConfs = sortedConfs.filter(conf => {
+        if (isOwnerOrAdmin) return true;
+        if (currentUser.role === 'MANAGER') {
+            return currentUser.allowedConfIds?.includes(conf.id);
+        }
+        return false;
+    });
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
              {/* Member Edit Modal */}
@@ -713,7 +722,7 @@ const ConfManagement: React.FC<{
                     )}
                 </div>
                 <div className="space-y-2">
-                    {sortedConfs.map(conf => (
+                    {visibleConfs.map(conf => (
                         <div 
                             key={conf.id} 
                             className={`p-3 rounded border transition-colors relative group ${selectedConfId === conf.id ? 'border-strongs-gold bg-strongs-gold/10' : 'border-gray-700 hover:bg-gray-700'} ${!conf.active ? 'opacity-50' : ''}`}
@@ -1267,12 +1276,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = (props) => {
   const isOwner = props.currentUser.role === 'OWNER';
   const isOwnerOrAdmin = props.currentUser.role === 'OWNER' || props.currentUser.role === 'ADMIN';
   const isAdminOrMod = isOwnerOrAdmin || props.currentUser.role === 'MOD';
+  const isManagerOrAbove = isAdminOrMod || props.currentUser.role === 'MANAGER';
   
-  const [activeTab, setActiveTab] = useState<'USERS' | 'CONFS' | 'NEWS' | 'JOIN_APPS' | 'SEASONS' | 'TOP100' | 'CONFIG' | 'TREINOS' | 'RESET'>(isAdminOrMod ? 'USERS' : 'TREINOS');
+  const [activeTab, setActiveTab] = useState<'USERS' | 'CONFS' | 'NEWS' | 'JOIN_APPS' | 'SEASONS' | 'TOP100' | 'CONFIG' | 'TREINOS' | 'RESET'>(isManagerOrAbove ? 'CONFS' : 'TREINOS');
 
   const allTabs = [
     { id: 'USERS', icon: Users, label: 'Usuários', adminOnly: true },
-    { id: 'CONFS', icon: ShieldCheck, label: 'Confederações', adminOnly: true },
+    { id: 'CONFS', icon: ShieldCheck, label: 'Confederações', managerOrAboveOnly: true },
     { id: 'NEWS', icon: ClipboardList, label: 'Notícias', ownerOrAdminOnly: true },
     { id: 'JOIN_APPS', icon: UserPlus, label: 'Solicitações', adminOnly: true },
     { id: 'SEASONS', icon: History, label: 'Arquivo', ownerOrAdminOnly: true },
@@ -1282,6 +1292,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = (props) => {
 
   const tabs = allTabs.filter(tab => {
       if (tab.ownerOrAdminOnly) return isOwnerOrAdmin;
+      if (tab.managerOrAboveOnly) return isManagerOrAbove;
       if (tab.adminOnly) return isAdminOrMod;
       return true;
   });

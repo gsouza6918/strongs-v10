@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { UserRole, User, Confederation, ConfTier } from '../types';
-import { Menu, X, LogOut, Shield, User as UserIcon, Trophy, Home, Newspaper, Users, Circle, UserPlus, Calculator, Globe } from 'lucide-react';
+import { Menu, X, LogOut, Shield, User as UserIcon, Trophy, Home, Newspaper, Users, Circle, UserPlus, Calculator, Globe, Briefcase, MessageCircle } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -22,6 +22,7 @@ export const Layout: React.FC<LayoutProps> = ({
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const [isMaletasExpanded, setIsMaletasExpanded] = useState(false);
 
   // Filter only active confederations for display in marquee
   const activeConfs = confederations.filter(c => c.active !== false);
@@ -207,16 +208,74 @@ export const Layout: React.FC<LayoutProps> = ({
         {children}
       </main>
 
+      {/* Modal for "Consiga Maletas" */}
+      {isMaletasExpanded && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-gray-900 w-full max-w-5xl h-[85vh] rounded-2xl border border-green-500 shadow-2xl flex flex-col overflow-hidden relative">
+            {/* Header */}
+            <div className="flex justify-between items-center p-4 border-b border-gray-800">
+              <h3 className="text-2xl font-display font-bold text-white flex items-center gap-2">
+                <Briefcase className="text-green-500" /> Consiga Maletas
+              </h3>
+              <button 
+                onClick={() => setIsMaletasExpanded(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center bg-black/20">
+              <img 
+                src="https://i.imgur.com/plELF8k.png" 
+                alt="Consiga Maletas" 
+                className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+              />
+            </div>
+            
+            {/* Footer */}
+            <div className="p-4 border-t border-gray-800 flex flex-col sm:flex-row gap-4 justify-end bg-gray-900/50">
+              <button 
+                onClick={() => setIsMaletasExpanded(false)}
+                className="px-6 py-3 rounded-lg font-bold text-gray-300 hover:text-white hover:bg-gray-800 transition-colors border border-gray-700"
+              >
+                Retornar ao Site
+              </button>
+              <a 
+                href="https://wa.me/5579988126434?text=Ol%C3%A1%2C%20eu%20vim%20pelo%20site%20da%20Strongs%20Brazil.%20Gostaria%20de%20or%C3%A7ar%20o%20seu%20servi%C3%A7o%20com%20o%20cupom%20do%20site.%20%3A%29"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white px-8 py-3 rounded-lg font-bold transition-colors shadow-lg shadow-green-600/20"
+              >
+                <MessageCircle size={20} />
+                WhatsApp
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Floating Action Button (FAB) for "Quero me Juntar" */}
       <button
         onClick={() => onNavigate('recrutamento')}
-        className="fixed bottom-24 right-6 z-40 bg-strongs-gold text-strongs-darker p-4 rounded-full shadow-[0_0_20px_rgba(255,215,0,0.5)] border-2 border-white hover:scale-110 transition-transform duration-300 group"
+        className="fixed bottom-40 right-6 z-40 bg-strongs-gold text-strongs-darker p-4 rounded-full shadow-[0_0_20px_rgba(255,215,0,0.5)] border-2 border-white hover:scale-110 transition-transform duration-300 group"
         title="Inscreva-se em uma confederação"
       >
         <UserPlus size={32} strokeWidth={2.5} />
         <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-black/80 text-white px-3 py-1 rounded text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none font-bold uppercase tracking-wide">
           Recrutamento
         </span>
+      </button>
+
+      {/* Floating Action Button (FAB) for "Consiga Maletas" */}
+      <button
+        onClick={() => setIsMaletasExpanded(true)}
+        className="fixed bottom-24 right-6 z-40 bg-gray-900 text-white px-4 py-3 rounded-full shadow-[0_0_20px_rgba(34,197,94,0.3)] border-2 border-green-500 hover:scale-105 transition-transform duration-300 flex items-center gap-2"
+        title="Consiga Maletas"
+      >
+        <Briefcase size={24} className="text-green-500" />
+        <span className="font-bold uppercase tracking-wide text-sm">Consiga Maletas</span>
       </button>
 
       {/* Footer */}
