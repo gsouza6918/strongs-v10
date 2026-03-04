@@ -304,7 +304,7 @@ export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, 
           const simulated = current + inc;
 
           return (
-            <tr key={attr} className={`group ${isWhite ? 'bg-gray-800 text-white' : 'bg-gray-900/40 text-gray-500'} hover:bg-gray-700/80 transition-colors relative`}>
+            <tr key={attr} className={`group ${isWhite ? 'bg-gray-700 md:bg-gray-800 text-white' : 'bg-gray-900 md:bg-gray-900/40 text-gray-600 md:text-gray-500'} hover:bg-gray-700/80 transition-colors relative`}>
               {idx === 0 && (
                 <td rowSpan={attrs.length} className={`border border-gray-600 ${catColor} w-8`}>
                   <div className="[writing-mode:vertical-rl] rotate-180 whitespace-nowrap text-xs font-bold mx-auto">
@@ -313,8 +313,9 @@ export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, 
                 </td>
               )}
               <td className="border border-gray-600 text-left px-2 font-bold text-xs whitespace-nowrap relative">
+                {isWhite && <div className="absolute left-0 top-0 bottom-0 w-1 bg-strongs-gold md:hidden z-20"></div>}
                 <div className="absolute top-1/2 left-0 w-full border-t border-dashed border-gray-500/20 -translate-y-1/2 pointer-events-none"></div>
-                <span className="relative z-10 px-1">{attr}</span>
+                <span className={`relative z-10 px-1 ${isWhite ? 'ml-1 md:ml-0 text-strongs-gold md:text-white' : ''}`}>{attr}</span>
               </td>
               <td className="border border-gray-600 p-0 w-16 relative">
                 <div className="absolute top-1/2 left-0 w-full border-t border-dashed border-gray-500/20 -translate-y-1/2 pointer-events-none"></div>
@@ -322,7 +323,7 @@ export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, 
                   type="number" 
                   value={attributes[attr] || ''} 
                   onChange={(e) => handleAttrChange(attr, e.target.value)}
-                  className="w-full h-full bg-transparent text-center outline-none font-bold relative z-10"
+                  className={`w-full h-full bg-transparent text-center outline-none font-bold relative z-10 ${isWhite ? 'text-white' : ''}`}
                 />
               </td>
               <td className="border border-gray-600 w-16 relative">
