@@ -1,9 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Activity, Shield, Zap, Target, Plus, Minus, Calculator, Save, List } from 'lucide-react';
+import { Save, Target, List } from 'lucide-react';
 import { User, SavedTraining, Position, PlayerTier, TIER_ICONS, TIER_LABELS } from '../types';
 import { saveData } from '../services/storage';
-
-type Position = 'NONE' | 'GK' | 'DL/DR' | 'DC' | 'DMC' | 'ML/MR' | 'MC' | 'AML/AMR' | 'AMC' | 'ST';
 
 const POSITIONS: Position[] = ['NONE', 'GK', 'DL/DR', 'DC', 'DMC', 'ML/MR', 'MC', 'AML/AMR', 'AMC', 'ST'];
 
@@ -39,43 +37,50 @@ const WHITE_ATTRIBUTES: Record<Position, string[]> = {
 
 const DRILLS = {
   attack: [
-    { name: 'Marcar Homem a Homem', attrs: ['Antecipação', 'Sair na Bola', 'Corte', 'Drible', 'Finalização'] },
-    { name: 'Passe, vá e dispare', attrs: ['Antecipação', 'Velocidade', 'Passe', 'Chute'] },
-    { name: 'Jogada ensaiada', attrs: ['Sair na Bola', 'Marcação', 'Cabeçada', 'Cruzamento', 'Chute'] },
-    { name: 'Técnica de chute', attrs: ['Reflexos', 'Agilidade', 'Força', 'Chute', 'Finalização'] },
-    { name: 'Drible de slalom', attrs: ['Condicionamento', 'Velocidade', 'Passe', 'Drible'] },
-    { name: 'Jogo na ponta', attrs: ['Espalmar', 'Cabeçada', 'Cruzamento', 'Chute', 'Finalização'] },
-    { name: 'Contra-ataque rápido', attrs: ['Comunicação', 'Criatividade', 'Passe', 'Cruzamento', 'Finalização'] }
+    { name: 'Marcar Homem a Homem', difficulty: 'Fácil', attrs: ['Antecipação', 'Sair na Bola', 'Corte', 'Drible', 'Finalização'] },
+    { name: 'Passe, vá e dispare', difficulty: 'Fácil', attrs: ['Antecipação', 'Velocidade', 'Passe', 'Chute'] },
+    { name: 'Jogada ensaiada', difficulty: 'Médio', attrs: ['Sair na Bola', 'Marcação', 'Cabeçada', 'Cruzamento', 'Chute'] },
+    { name: 'Técnica de chute', difficulty: 'Médio', attrs: ['Reflexos', 'Agilidade', 'Força', 'Chute', 'Finalização'] },
+    { name: 'Drible de slalom', difficulty: 'Difícil', attrs: ['Condicionamento', 'Velocidade', 'Passe', 'Drible'] },
+    { name: 'Jogo na ponta', difficulty: 'Difícil', attrs: ['Espalmar', 'Cabeçada', 'Cruzamento', 'Chute', 'Finalização'] },
+    { name: 'Contra-ataque rápido', difficulty: 'Muito Difícil', attrs: ['Comunicação', 'Criatividade', 'Passe', 'Cruzamento', 'Finalização'] }
   ],
   defense: [
-    { name: 'Análise de vídeo', attrs: ['Comunicação', 'Criatividade', 'Posicionamento', 'Coragem'] },
-    { name: 'Cabeceada', attrs: ['Criatividade', 'Posicionamento', 'Cabeçada', 'Passe'] },
-    { name: 'Uma linha de defesa', attrs: ['Comunicação', 'Concentração', 'Marcação', 'Posicionamento'] },
-    { name: 'Parar o atacante', attrs: ['Força', 'Corte', 'Marcação', 'Coragem', 'Drible'] },
-    { name: 'Cruzamento defesa', attrs: ['Jogo Aéreo', 'Marcação', 'Cabeçada', 'Coragem', 'Cruzamento'] },
-    { name: 'Pressione o play', attrs: ['Agressividade', 'Corte', 'Marcação', 'Posicionamento', 'Coragem'] },
-    { name: 'Treino de goleiro', attrs: ['Reflexos', 'Agilidade', 'Arremesso', 'Chutar', 'Jogo Aéreo'] }
+    { name: 'Análise de vídeo', difficulty: 'Muito Fácil', attrs: ['Comunicação', 'Criatividade', 'Posicionamento', 'Coragem'] },
+    { name: 'Cabeceada', difficulty: 'Fácil', attrs: ['Criatividade', 'Posicionamento', 'Cabeçada', 'Passe'] },
+    { name: 'Uma linha de defesa', difficulty: 'Médio', attrs: ['Comunicação', 'Concentração', 'Marcação', 'Posicionamento'] },
+    { name: 'Parar o atacante', difficulty: 'Médio', attrs: ['Força', 'Corte', 'Marcação', 'Coragem', 'Drible'] },
+    { name: 'Cruzamento defesa', difficulty: 'Médio', attrs: ['Jogo Aéreo', 'Marcação', 'Cabeçada', 'Coragem', 'Cruzamento'] },
+    { name: 'Pressione o play', difficulty: 'Difícil', attrs: ['Agressividade', 'Corte', 'Marcação', 'Posicionamento', 'Coragem'] },
+    { name: 'Treino de goleiro', difficulty: 'Difícil', attrs: ['Reflexos', 'Agilidade', 'Arremesso', 'Chutar', 'Jogo Aéreo'] }
   ],
   possession: [
-    { name: 'Controle de bola', attrs: ['Concentração', 'Criatividade', 'Cabeçada', 'Drible'] },
-    { name: 'Jogo de bobinho', attrs: ['Condicionamento', 'Agressividade', 'Corte', 'Posicionamento', 'Passe'] },
-    { name: 'Matada de bola', attrs: ['Arremesso', 'Condicionamento', 'Passe', 'Drible'] },
-    { name: 'Virada de jogo', attrs: ['Comunicação', 'Velocidade', 'Criatividade', 'Posicionamento', 'Passe', 'Cruzamento'] },
-    { name: 'Posicionamento', attrs: ['Jogo Aéreo', 'Condicionamento', 'Velocidade', 'Posicionamento'] },
-    { name: 'Passes para o chute', attrs: ['Antecipação', 'Criatividade', 'Posicionamento', 'Passe', 'Finalização'] },
-    { name: 'Entradas', attrs: ['Força', 'Agressividade', 'Marcação', 'Coragem', 'Drible'] }
+    { name: 'Controle de bola', difficulty: 'Muito Fácil', attrs: ['Concentração', 'Criatividade', 'Cabeçada', 'Drible'] },
+    { name: 'Jogo de bobinho', difficulty: 'Fácil', attrs: ['Condicionamento', 'Agressividade', 'Corte', 'Posicionamento', 'Passe'] },
+    { name: 'Matada de bola', difficulty: 'Fácil', attrs: ['Arremesso', 'Condicionamento', 'Passe', 'Drible'] },
+    { name: 'Virada de jogo', difficulty: 'Médio', attrs: ['Comunicação', 'Velocidade', 'Criatividade', 'Posicionamento', 'Passe', 'Cruzamento'] },
+    { name: 'Posicionamento', difficulty: 'Médio', attrs: ['Jogo Aéreo', 'Condicionamento', 'Velocidade', 'Posicionamento'] },
+    { name: 'Entradas', difficulty: 'Médio', attrs: ['Força', 'Agressividade', 'Marcação', 'Coragem', 'Drible'] },
+    { name: 'Passes para o chute', difficulty: 'Difícil', attrs: ['Antecipação', 'Criatividade', 'Posicionamento', 'Passe', 'Finalização'] }
   ],
   physical: [
-    { name: 'Aquecimento', attrs: ['Reflexos', 'Condicionamento', 'Agressividade', 'Cabeçada'] },
-    { name: 'Alongamento', attrs: ['Agilidade', 'Condicionamento', 'Força', 'Velocidade'] },
-    { name: 'Carioca com escadas', attrs: ['Agilidade', 'Concentração', 'Agressividade', 'Velocidade'] },
-    { name: 'Corrida longa', attrs: ['Concentração', 'Condicionamento', 'Velocidade'] },
-    { name: 'Corrida ir e vir', attrs: ['Agilidade', 'Força', 'Velocidade', 'Coragem'] },
-    { name: 'Corrida de obstáculos', attrs: ['Chutar', 'Agressividade', 'Velocidade', 'Coragem'] },
-    { name: 'Academia', attrs: ['Arremesso', 'Chutar', 'Condicionamento', 'Força'] },
-    { name: 'Arrancada', attrs: ['Sair na Bola', 'Condicionamento', 'Velocidade', 'Drible'] }
+    { name: 'Aquecimento', difficulty: 'Muito Fácil', attrs: ['Reflexos', 'Condicionamento', 'Agressividade', 'Cabeçada'] },
+    { name: 'Alongamento', difficulty: 'Fácil', attrs: ['Agilidade', 'Condicionamento', 'Força', 'Velocidade'] },
+    { name: 'Carioca com escadas', difficulty: 'Fácil', attrs: ['Agilidade', 'Concentração', 'Agressividade', 'Velocidade'] },
+    { name: 'Corrida longa', difficulty: 'Médio', attrs: ['Concentração', 'Condicionamento', 'Velocidade'] },
+    { name: 'Corrida ir e vir', difficulty: 'Difícil', attrs: ['Agilidade', 'Força', 'Velocidade', 'Coragem'] },
+    { name: 'Corrida de obstáculos', difficulty: 'Difícil', attrs: ['Chutar', 'Agressividade', 'Velocidade', 'Coragem'] },
+    { name: 'Academia', difficulty: 'Muito Difícil', attrs: ['Arremesso', 'Chutar', 'Condicionamento', 'Força'] },
+    { name: 'Arrancada', difficulty: 'Muito Difícil', attrs: ['Sair na Bola', 'Condicionamento', 'Velocidade', 'Drible'] }
   ]
 };
+
+const DRILL_CATEGORIES = [
+  { key: 'attack', label: 'ATAQUE', color: 'bg-red-900/40 text-red-400 border-red-900/50', drills: DRILLS.attack },
+  { key: 'defense', label: 'DEFESA', color: 'bg-green-900/40 text-green-400 border-green-900/50', drills: DRILLS.defense },
+  { key: 'possession', label: 'POSSE', color: 'bg-yellow-900/40 text-yellow-400 border-yellow-900/50', drills: DRILLS.possession },
+  { key: 'physical', label: 'FÍSICO E MENTAL', color: 'bg-blue-900/40 text-blue-400 border-blue-900/50', drills: DRILLS.physical }
+];
 
 export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, onDataChange: (d: any) => void, onUpdateSavedTrainings?: (trainings: SavedTraining[]) => Promise<void> }> = ({ currentUser, data, onDataChange, onUpdateSavedTrainings }) => {
   const [pos1, setPos1] = useState<Position>('NONE');
@@ -101,7 +106,6 @@ export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, 
         setAttributes(training.baseAttributes || {});
         setDrillSteps(training.drillSteps || []);
         
-        // Reconstruct drills state from steps
         const loadedDrills: Record<string, number> = {};
         training.drillSteps.forEach(step => {
           loadedDrills[step.drillName] = (loadedDrills[step.drillName] || 0) + step.count;
@@ -140,9 +144,9 @@ export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, 
     setAttributes(prev => ({ ...prev, [attr]: num }));
   };
 
-  const handleDrillChange = (drillName: string, deltaOrNewValue: number, isAbsolute: boolean = false) => {
+  const handleDrillChange = (drillName: string, newValue: number) => {
     const current = drills[drillName] || 0;
-    const next = isAbsolute ? Math.max(0, deltaOrNewValue) : Math.max(0, current + deltaOrNewValue);
+    const next = Math.max(0, newValue);
     const delta = next - current;
     
     if (delta !== 0) {
@@ -194,6 +198,7 @@ export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, 
 
   const stats = useMemo(() => {
     let currentTotal = 0;
+    let realTotal = 0;
     let simulatedTotal = 0;
     let whiteCurrentTotal = 0;
     let whiteSimulatedTotal = 0;
@@ -210,18 +215,18 @@ export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, 
       const simulated = current + inc;
 
       if (whiteAttributes.has(attr)) {
-        // Apply deduction only to white attributes for calculations
         const currentWithDeduction = current - tierDeduction;
-        const simulatedWithDeduction = simulated - tierDeduction;
 
-        currentTotal += currentWithDeduction;
-        simulatedTotal += simulatedWithDeduction;
+        currentTotal += current;
+        realTotal += currentWithDeduction;
+        simulatedTotal += simulated;
         
         whiteCurrentTotal += currentWithDeduction;
-        whiteSimulatedTotal += simulatedWithDeduction;
+        whiteSimulatedTotal += simulated;
         whiteCount++;
       } else {
         currentTotal += current;
+        realTotal += current;
         simulatedTotal += simulated;
         
         greyCurrentTotal += current;
@@ -231,120 +236,15 @@ export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, 
     });
 
     const currentAvg = activeAttributes.length > 0 ? currentTotal / 15 : 0;
+    const realAvg = activeAttributes.length > 0 ? realTotal / 15 : 0;
     const simulatedAvg = activeAttributes.length > 0 ? simulatedTotal / 15 : 0;
     
-    const whiteCurrentAvg = whiteCount > 0 ? whiteCurrentTotal / whiteCount : 0;
-    const whiteSimulatedAvg = whiteCount > 0 ? whiteSimulatedTotal / whiteCount : 0;
-    
-    const greyCurrentAvg = greyCount > 0 ? greyCurrentTotal / greyCount : 0;
-    const greySimulatedAvg = greyCount > 0 ? greySimulatedTotal / greyCount : 0;
-
     return {
       currentAvg,
+      realAvg,
       simulatedAvg,
-      whiteCurrentAvg,
-      whiteSimulatedAvg,
-      greyCurrentAvg,
-      greySimulatedAvg
     };
   }, [activeAttributes, attributes, increments, whiteAttributes, playerTier]);
-
-  const renderAttributeRow = (attr: string) => {
-    const isWhite = whiteAttributes.has(attr);
-    const current = attributes[attr] || 0;
-    const inc = increments[attr] || 0;
-    const simulated = current + inc;
-
-    return (
-      <div key={attr} className={`flex items-center justify-between p-2 rounded mb-1 border ${isWhite ? 'bg-gray-800 border-gray-600' : 'bg-gray-900/50 border-gray-800 opacity-75'}`}>
-        <span className={`w-1/3 text-sm font-bold ${isWhite ? 'text-white' : 'text-gray-500'}`}>{attr}</span>
-        <input 
-          type="number" 
-          value={attributes[attr] || ''} 
-          onChange={(e) => handleAttrChange(attr, e.target.value)}
-          className="w-16 bg-black/50 border border-gray-700 rounded p-1 text-center text-white text-sm focus:border-strongs-gold outline-none"
-          placeholder="0"
-        />
-        <span className="w-16 text-center text-strongs-gold font-bold">{simulated}</span>
-        <span className="w-16 text-center text-green-500 font-bold">{inc > 0 ? `+${inc}` : '-'}</span>
-      </div>
-    );
-  };
-
-  const renderDrillItem = (drill: { name: string, attrs: string[] }) => {
-    const count = drills[drill.name] || 0;
-    
-    const validAttrs = drill.attrs.filter(attr => activeAttributes.includes(attr));
-    
-    let whites = 0;
-    let greys = 0;
-    let validCount = 0;
-    let sum = 0;
-    const tierDeduction = TIER_DEDUCTIONS[playerTier] || 0;
-
-    validAttrs.forEach(attr => {
-      let val = (attributes[attr] || 0) + (increments[attr] || 0);
-      if (whiteAttributes.has(attr)) {
-        whites++;
-        val -= tierDeduction;
-      } else {
-        greys++;
-      }
-      sum += val;
-      validCount++;
-    });
-    
-    let average = validCount > 0 ? sum / validCount : 0;
-
-    let colorClass = 'text-white';
-    if (validCount > 0) {
-      if (greys === 0 && whites > 0) {
-        colorClass = 'text-green-600';
-      } else if (whites >= 2 && greys === 1) {
-        colorClass = 'text-green-400';
-      } else if (greys === 2) {
-        colorClass = 'text-yellow-400';
-      } else if (greys > whites) {
-        colorClass = 'text-red-500';
-      }
-    }
-
-    return (
-      <div key={drill.name} className="flex items-center justify-between bg-gray-800 p-2 rounded border border-gray-700 mb-2">
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2">
-            <span className={`text-sm font-bold ${colorClass}`}>{drill.name}</span>
-            {validCount > 0 && (
-              <span className="text-xs font-bold bg-gray-900 px-1.5 py-0.5 rounded text-gray-300">
-                {whites}/{greys}
-              </span>
-            )}
-            {validCount > 0 && (
-              <span className="text-xs font-bold text-strongs-gold" title="Média dos atributos">
-                M: {average.toFixed(1)}
-              </span>
-            )}
-          </div>
-          <span className="text-[10px] text-gray-400">{validAttrs.join(', ')}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => handleDrillChange(drill.name, -1)} className="w-6 h-6 bg-red-900/50 text-red-500 rounded flex items-center justify-center hover:bg-red-900"><Minus size={14}/></button>
-          <input 
-            type="number" 
-            min="0"
-            value={count === 0 ? '' : count} 
-            onChange={(e) => {
-              const val = parseInt(e.target.value) || 0;
-              handleDrillChange(drill.name, val, true);
-            }}
-            className="w-10 bg-black/50 border border-gray-700 rounded text-center text-white font-bold text-sm focus:border-strongs-gold outline-none py-0.5"
-            placeholder="0"
-          />
-          <button onClick={() => handleDrillChange(drill.name, 1)} className="w-6 h-6 bg-green-900/50 text-green-500 rounded flex items-center justify-center hover:bg-green-900"><Plus size={14}/></button>
-        </div>
-      </div>
-    );
-  };
 
   const handleSaveTraining = async () => {
     if (!currentUser) return;
@@ -391,6 +291,105 @@ export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, 
     }
   };
 
+  const renderAttributeCategory = (catName: string, attrs: string[], catColor: string) => {
+    if (attrs.length === 0 || (!isGK && catName === 'GOLEIRO') || (isGK && (catName === 'DEFESA' || catName === 'ATAQUE'))) return null;
+    
+    return (
+      <>
+        {attrs.map((attr, idx) => {
+          const isWhite = whiteAttributes.has(attr);
+          const current = attributes[attr] || 0;
+          const real = current - (isWhite ? (TIER_DEDUCTIONS[playerTier] || 0) : 0);
+          const inc = increments[attr] || 0;
+          const simulated = current + inc;
+
+          return (
+            <tr key={attr} className={`group ${isWhite ? 'bg-gray-800 text-white' : 'bg-gray-900/40 text-gray-500'} hover:bg-gray-700/80 transition-colors relative`}>
+              {idx === 0 && (
+                <td rowSpan={attrs.length} className={`border border-gray-600 ${catColor} w-8`}>
+                  <div className="[writing-mode:vertical-rl] rotate-180 whitespace-nowrap text-xs font-bold mx-auto">
+                    {catName}
+                  </div>
+                </td>
+              )}
+              <td className="border border-gray-600 text-left px-2 font-bold text-xs whitespace-nowrap relative">
+                <div className="absolute top-1/2 left-0 w-full border-t border-dashed border-gray-500/20 -translate-y-1/2 pointer-events-none"></div>
+                <span className="relative z-10 px-1">{attr}</span>
+              </td>
+              <td className="border border-gray-600 p-0 w-16 relative">
+                <div className="absolute top-1/2 left-0 w-full border-t border-dashed border-gray-500/20 -translate-y-1/2 pointer-events-none"></div>
+                <input 
+                  type="number" 
+                  value={attributes[attr] || ''} 
+                  onChange={(e) => handleAttrChange(attr, e.target.value)}
+                  className="w-full h-full bg-transparent text-center outline-none font-bold relative z-10"
+                />
+              </td>
+              <td className="border border-gray-600 w-16 relative">
+                <div className="absolute top-1/2 left-0 w-full border-t border-dashed border-gray-500/20 -translate-y-1/2 pointer-events-none"></div>
+                <span className="relative z-10 px-1">{real}%</span>
+              </td>
+              <td className={`border border-gray-600 font-bold w-16 relative ${inc > 0 ? 'text-strongs-gold' : ''}`}>
+                <div className="absolute top-1/2 left-0 w-full border-t border-dashed border-gray-500/20 -translate-y-1/2 pointer-events-none"></div>
+                <span className="relative z-10 px-1">{simulated}%</span>
+              </td>
+              
+              {DRILL_CATEGORIES.map(cat => (
+                cat.drills.map(drill => {
+                  const trainsAttr = drill.attrs.includes(attr);
+                  return (
+                    <td key={drill.name} className="border border-gray-600 text-center w-8 relative hover:bg-gray-700/50 transition-colors">
+                      <div className="absolute top-1/2 left-0 w-full border-t border-dashed border-gray-500/20 -translate-y-1/2 pointer-events-none"></div>
+                      <div className="absolute top-0 left-1/2 h-full border-l border-dashed border-gray-500/20 -translate-x-1/2 pointer-events-none"></div>
+                      {trainsAttr ? <span className={`${isWhite ? 'text-strongs-gold' : 'text-gray-400'} text-xl leading-none relative z-10 drop-shadow-md px-1`}>•</span> : null}
+                    </td>
+                  );
+                })
+              ))}
+            </tr>
+          );
+        })}
+      </>
+    );
+  };
+
+  const getDrillEfficiencyData = (drill: any) => {
+    const validAttrs = drill.attrs.filter((a: string) => activeAttributes.includes(a));
+    let whites = 0;
+    let greys = 0;
+    validAttrs.forEach((a: string) => {
+      if (whiteAttributes.has(a)) whites++;
+      else greys++;
+    });
+    
+    let bgColor = 'bg-gray-800 text-white';
+    if (greys === 0) {
+      bgColor = 'bg-green-700 text-white';
+    } else if (greys === 1) {
+      bgColor = 'bg-green-500 text-black';
+    } else if (greys >= 2) {
+      if (whites === greys) bgColor = 'bg-yellow-500 text-black';
+      else if (greys > whites) bgColor = 'bg-red-600 text-white';
+      else bgColor = 'bg-green-500 text-black';
+    }
+
+    return { text: `${whites}/${greys}`, bgColor };
+  };
+
+  const getDrillAverage = (drill: any) => {
+    const validAttrs = drill.attrs.filter((a: string) => activeAttributes.includes(a));
+    if (validAttrs.length === 0) return '0%';
+    let sum = 0;
+    const tierDeduction = TIER_DEDUCTIONS[playerTier] || 0;
+    validAttrs.forEach((attr: string) => {
+      let current = attributes[attr] || 0;
+      let real = current - (whiteAttributes.has(attr) ? tierDeduction : 0);
+      let inc = increments[attr] || 0;
+      sum += (real + inc);
+    });
+    return (sum / validAttrs.length).toFixed(0) + '%';
+  };
+
   const renderLog = () => {
     let currentAttrs = { ...attributes };
     
@@ -403,11 +402,6 @@ export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, 
 
       // Find a white attribute to display, fallback to first valid
       const targetAttr = validAttrs.find(a => whiteAttributes.has(a)) || validAttrs[0];
-      const isWhite = whiteAttributes.has(targetAttr);
-      const gain = isWhite ? 1 : 0.5;
-      
-      // Calculate value BEFORE this step
-      const beforeValue = currentAttrs[targetAttr] || 0;
       
       // Update ALL attributes for this step
       drillDef.attrs.forEach(attr => {
@@ -431,189 +425,230 @@ export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, 
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      <div className="text-center mb-8">
-        <h2 className="text-4xl font-display font-bold text-white mb-2 uppercase tracking-widest">
-          Simulador de <span className="text-strongs-gold">Treino</span>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-3xl font-display font-bold text-white uppercase tracking-widest">
+          Simulador de <span className="text-strongs-gold">Treinos</span>
         </h2>
-        <div className="w-24 h-1 bg-strongs-gold mx-auto rounded-full mb-4"></div>
-        <p className="text-gray-400">Configure as posições, atributos iniciais e simule os ganhos com os treinos.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Left Column: Config & Attributes */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-gray-900/80 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-xl">
-            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Target className="text-strongs-gold"/> Posições e Tier do Jogador</h3>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {[
-                { label: 'Posição 1', val: pos1, set: setPos1 },
-                { label: 'Posição 2', val: pos2, set: setPos2 },
-                { label: 'Posição 3', val: pos3, set: setPos3 }
-              ].map((p, i) => (
-                <div key={i}>
-                  <label className="block text-xs text-gray-400 uppercase font-bold mb-1">{p.label}</label>
-                  <select 
-                    value={p.val} 
-                    onChange={(e) => p.set(e.target.value as Position)}
-                    className="w-full bg-black/50 border border-gray-600 rounded p-2 text-white focus:border-strongs-gold outline-none"
-                  >
-                    {POSITIONS.map(pos => <option key={pos} value={pos}>{pos === 'NONE' ? 'Nenhuma' : pos}</option>)}
-                  </select>
+      <div className="overflow-x-auto bg-gray-900 rounded-xl border border-gray-700 custom-scrollbar shadow-2xl">
+        <table className="w-full text-sm border-collapse text-center min-w-max">
+          <thead>
+            <tr>
+              <th colSpan={2} rowSpan={2} className="border border-gray-600 bg-gray-800 p-2 min-w-[200px]">
+                <div className="flex flex-col gap-2">
+                  <div className="grid grid-cols-2 gap-2 text-xs text-left">
+                    <div>
+                      <label className="text-gray-400 font-bold">Pos 1:</label>
+                      <select className="w-full bg-black text-white p-1 rounded border border-gray-600" value={pos1} onChange={e => setPos1(e.target.value as Position)}>
+                        {POSITIONS.map(p => <option key={p} value={p}>{p === 'NONE' ? '-' : p}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-gray-400 font-bold">Pos 2:</label>
+                      <select className="w-full bg-black text-white p-1 rounded border border-gray-600" value={pos2} onChange={e => setPos2(e.target.value as Position)}>
+                        {POSITIONS.map(p => <option key={p} value={p}>{p === 'NONE' ? '-' : p}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-gray-400 font-bold">Pos 3:</label>
+                      <select className="w-full bg-black text-white p-1 rounded border border-gray-600" value={pos3} onChange={e => setPos3(e.target.value as Position)}>
+                        {POSITIONS.map(p => <option key={p} value={p}>{p === 'NONE' ? '-' : p}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-gray-400 font-bold">Tier:</label>
+                      <select className="w-full bg-black text-white p-1 rounded border border-gray-600" value={playerTier} onChange={e => setPlayerTier(e.target.value as PlayerTier)}>
+                        {(Object.keys(TIER_LABELS) as PlayerTier[]).map(tier => <option key={tier} value={tier}>{TIER_LABELS[tier]}</option>)}
+                      </select>
+                    </div>
+                  </div>
                 </div>
-              ))}
+              </th>
+              <th rowSpan={2} className="border border-gray-600 bg-gray-800 p-2 w-12">
+                <div className="[writing-mode:vertical-rl] rotate-180 whitespace-nowrap text-white font-bold text-xs mx-auto">Habilidade Iniciais</div>
+              </th>
+              <th rowSpan={2} className="border border-gray-600 bg-gray-800 p-2 w-12">
+                <div className="[writing-mode:vertical-rl] rotate-180 whitespace-nowrap text-white font-bold text-xs mx-auto">Habilidade Real</div>
+              </th>
+              <th rowSpan={2} className="border border-gray-600 bg-gray-800 p-2 w-12">
+                <div className="[writing-mode:vertical-rl] rotate-180 whitespace-nowrap text-white font-bold text-xs mx-auto">Simulação</div>
+              </th>
               
-              {/* Player Tier Selection */}
-              <div>
-                <label className="block text-xs text-gray-400 uppercase font-bold mb-1">Tier do Jogador</label>
-                <div className="relative">
-                  {playerTier !== 'NONE' && (
-                    <img 
-                      src={TIER_ICONS[playerTier]} 
-                      alt={TIER_LABELS[playerTier]} 
-                      className="absolute left-2 top-1/2 -translate-y-1/2 w-5 h-5 object-contain pointer-events-none"
-                      referrerPolicy="no-referrer"
+              {DRILL_CATEGORIES.map(cat => (
+                cat.drills.map(drill => (
+                  <th key={drill.name} className="border border-gray-600 bg-gray-200 text-black text-[10px] p-1 h-20 align-bottom w-8 relative">
+                    <div className="absolute top-0 left-1/2 h-full border-l border-dashed border-gray-500/30 -translate-x-1/2 pointer-events-none"></div>
+                    <div className="[writing-mode:vertical-rl] rotate-180 whitespace-nowrap mx-auto relative z-10">
+                      {drill.difficulty}
+                    </div>
+                  </th>
+                ))
+              ))}
+            </tr>
+            <tr>
+              {DRILL_CATEGORIES.map(cat => (
+                cat.drills.map(drill => (
+                  <th key={drill.name} className={`border border-gray-600 ${cat.color} p-2 h-40 w-8 relative`}>
+                    <div className="absolute top-0 left-1/2 h-full border-l border-dashed border-gray-500/30 -translate-x-1/2 pointer-events-none"></div>
+                    <div className="[writing-mode:vertical-rl] rotate-180 whitespace-nowrap text-xs font-bold mx-auto relative z-10">
+                      {drill.name}
+                    </div>
+                  </th>
+                ))
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {isGK ? (
+              <>
+                {renderAttributeCategory('GOLEIRO', ATTRIBUTES.gk, 'bg-green-700')}
+                {renderAttributeCategory('FÍSICO E MENTAL', ATTRIBUTES.physical, 'bg-blue-800')}
+              </>
+            ) : (
+              <>
+                {renderAttributeCategory('DEFESA', ATTRIBUTES.defense, 'bg-green-700')}
+                {renderAttributeCategory('ATAQUE', ATTRIBUTES.attack, 'bg-red-800')}
+                {renderAttributeCategory('FÍSICO E MENTAL', ATTRIBUTES.physical, 'bg-blue-800')}
+              </>
+            )}
+            
+            {/* MÉDIAS GERAIS Section */}
+            <tr className="border-y-4 border-strongs-gold bg-gray-900 shadow-[0_0_15px_rgba(255,215,0,0.1)]">
+              <td colSpan={2} className="border border-gray-600 p-4 text-strongs-gold font-display font-bold text-right text-sm uppercase tracking-widest">MÉDIA GERAL:</td>
+              <td className="border border-gray-600 p-4 text-white font-bold text-lg">{stats.currentAvg.toFixed(1)}%</td>
+              <td className="border border-gray-600 p-4 text-white font-bold text-lg">{stats.realAvg.toFixed(1)}%</td>
+              <td className="border border-gray-600 p-4 text-strongs-gold font-bold text-xl bg-strongs-gold/10">{stats.simulatedAvg.toFixed(1)}%</td>
+              <td colSpan={DRILL_CATEGORIES.reduce((acc, cat) => acc + cat.drills.length, 0)} className="border border-gray-600"></td>
+            </tr>
+            
+            {/* DADOS Section */}
+            <tr>
+              <td rowSpan={4} className="border border-gray-600 bg-gray-800 text-white w-8">
+                <div className="[writing-mode:vertical-rl] rotate-180 whitespace-nowrap text-xs font-bold mx-auto">
+                  DADOS
+                </div>
+              </td>
+              <td className="border border-gray-600 bg-gray-800 text-gray-400 font-bold text-right pr-2 text-xs">EFICIÊNCIA DO TREINO:</td>
+              <td colSpan={3} className="border border-gray-600 bg-gray-800"></td>
+              {DRILL_CATEGORIES.map(cat => (
+                cat.drills.map(drill => {
+                  const eff = getDrillEfficiencyData(drill);
+                  return (
+                    <td key={drill.name} className={`border border-gray-600 ${eff.bgColor} font-bold text-xs relative`}>
+                      <div className="absolute top-0 left-1/2 h-full border-l border-dashed border-gray-500/30 -translate-x-1/2 pointer-events-none"></div>
+                      <span className="relative z-10">{eff.text}</span>
+                    </td>
+                  );
+                })
+              ))}
+            </tr>
+            <tr>
+              <td className="border border-gray-600 bg-gray-800 text-gray-400 font-bold text-right pr-2 text-xs">MÉDIA DO TREINO:</td>
+              <td colSpan={3} className="border border-gray-600 bg-gray-800 text-white font-bold">{stats.simulatedAvg.toFixed(0)}%</td>
+              {DRILL_CATEGORIES.map(cat => (
+                cat.drills.map(drill => (
+                  <td key={drill.name} className="border border-gray-600 bg-gray-800 text-white font-bold text-xs relative">
+                    <div className="absolute top-0 left-1/2 h-full border-l border-dashed border-gray-500/20 -translate-x-1/2 pointer-events-none"></div>
+                    <span className="relative z-10">{getDrillAverage(drill)}</span>
+                  </td>
+                ))
+              ))}
+            </tr>
+            <tr>
+              <td className="border border-gray-600 bg-gray-800 text-gray-400 font-bold text-right pr-2 text-xs">BARRA DE ROLAMENTO:</td>
+              <td colSpan={3} className="border border-gray-600 bg-gray-800 p-1">
+                <button 
+                  onClick={() => {
+                    setDrills({});
+                    setDrillSteps([]);
+                  }}
+                  className="w-full py-1 bg-red-900/40 hover:bg-red-800 text-red-400 hover:text-white text-xs font-bold rounded transition-colors border border-red-900/50"
+                  title="Zerar todos os treinos"
+                >
+                  ZERAR
+                </button>
+              </td>
+              {DRILL_CATEGORIES.map(cat => (
+                cat.drills.map(drill => (
+                  <td key={drill.name} className="border border-gray-600 bg-black p-0 relative">
+                    <div className="absolute top-0 left-1/2 h-full border-l border-dashed border-gray-500/20 -translate-x-1/2 pointer-events-none"></div>
+                    <input 
+                      type="number" 
+                      min="0"
+                      value={drills[drill.name] || ''} 
+                      onChange={(e) => handleDrillChange(drill.name, parseInt(e.target.value) || 0)}
+                      className="w-full h-full text-center text-white bg-transparent font-bold outline-none py-1 focus:bg-strongs-gold/20 relative z-10"
                     />
-                  )}
-                  <select 
-                    value={playerTier} 
-                    onChange={(e) => setPlayerTier(e.target.value as PlayerTier)}
-                    className={`w-full bg-black/50 border border-gray-600 rounded p-2 text-white focus:border-strongs-gold outline-none ${playerTier !== 'NONE' ? 'pl-9' : ''}`}
-                  >
-                    {(Object.keys(TIER_LABELS) as PlayerTier[]).map(tier => (
-                      <option key={tier} value={tier}>{TIER_LABELS[tier]}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
+                  </td>
+                ))
+              ))}
+            </tr>
+            <tr>
+              <td className="border border-gray-600 bg-gray-800 text-gray-400 font-bold text-right pr-2 text-xs">INCREMENTO:</td>
+              <td colSpan={3} className="border border-gray-600 bg-gray-800"></td>
+              {DRILL_CATEGORIES.map(cat => (
+                cat.drills.map(drill => {
+                  const count = drills[drill.name] || 0;
+                  return (
+                    <td key={drill.name} className="border border-gray-600 bg-gray-900 text-strongs-gold font-bold text-xs relative">
+                      <div className="absolute top-0 left-1/2 h-full border-l border-dashed border-gray-500/20 -translate-x-1/2 pointer-events-none"></div>
+                      <span className="relative z-10">{count > 0 ? count : 0}</span>
+                    </td>
+                  );
+                })
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-          <div className="bg-gray-900/80 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-white flex items-center gap-2"><Calculator className="text-strongs-gold"/> Atributos</h3>
-              <div className="flex gap-4 text-xs font-bold uppercase text-gray-400">
-                <span className="w-16 text-center">Atual</span>
-                <span className="w-16 text-center">Simulado</span>
-                <span className="w-16 text-center">Ganho</span>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {isGK ? (
-                <>
-                  <div>
-                    <h4 className="text-strongs-gold font-bold mb-2 uppercase text-sm border-b border-gray-700 pb-1">Goleiro</h4>
-                    {ATTRIBUTES.gk.map(renderAttributeRow)}
-                  </div>
-                  <div>
-                    <h4 className="text-strongs-gold font-bold mb-2 uppercase text-sm border-b border-gray-700 pb-1">Físico e Mental</h4>
-                    {ATTRIBUTES.physical.map(renderAttributeRow)}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div>
-                    <h4 className="text-strongs-gold font-bold mb-2 uppercase text-sm border-b border-gray-700 pb-1">Defesa</h4>
-                    {ATTRIBUTES.defense.map(renderAttributeRow)}
-                    <h4 className="text-strongs-gold font-bold mt-4 mb-2 uppercase text-sm border-b border-gray-700 pb-1">Ataque</h4>
-                    {ATTRIBUTES.attack.map(renderAttributeRow)}
-                  </div>
-                  <div>
-                    <h4 className="text-strongs-gold font-bold mb-2 uppercase text-sm border-b border-gray-700 pb-1">Físico e Mental</h4>
-                    {ATTRIBUTES.physical.map(renderAttributeRow)}
-                  </div>
-                </>
-              )}
-            </div>
+      {/* Save Training Section & Log */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        {/* Log de Treinos */}
+        <div className="bg-gray-900 border border-gray-700 p-6 rounded-xl shadow-xl">
+          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <List className="text-strongs-gold" /> Log de Treinos
+          </h3>
+          <div className="bg-black/50 border border-gray-800 rounded p-4 h-[200px] overflow-y-auto custom-scrollbar">
+            {drillSteps.length === 0 ? (
+              <p className="text-gray-500 text-sm italic text-center mt-16">Nenhum treino adicionado ainda.</p>
+            ) : (
+              renderLog()
+            )}
           </div>
         </div>
 
-        {/* Right Column: Drills & Summary */}
-        <div className="space-y-6">
-          <div className="bg-gray-900/80 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-xl sticky top-24">
-            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Activity className="text-strongs-gold"/> Resumo (Médias)</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center p-3 bg-black/40 rounded border border-gray-800">
-                <span className="text-gray-400 text-sm font-bold uppercase">Média Geral Atual</span>
-                <span className="text-white font-bold text-lg">{stats.currentAvg.toFixed(1)}%</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-strongs-gold/10 rounded border border-strongs-gold/30">
-                <span className="text-strongs-gold text-sm font-bold uppercase">Média Geral Simulada</span>
-                <span className="text-strongs-gold font-bold text-xl">{stats.simulatedAvg.toFixed(1)}%</span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-black/40 rounded border border-gray-800">
-                <span className="text-gray-300 text-sm font-bold uppercase">Brancas (Atual / Sim)</span>
-                <span className="text-white font-bold">{stats.whiteCurrentAvg.toFixed(1)} / <span className="text-strongs-gold">{stats.whiteSimulatedAvg.toFixed(1)}</span></span>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-black/40 rounded border border-gray-800">
-                <span className="text-gray-500 text-sm font-bold uppercase">Cinzas (Atual / Sim)</span>
-                <span className="text-gray-400 font-bold">{stats.greyCurrentAvg.toFixed(1)} / <span className="text-strongs-gold">{stats.greySimulatedAvg.toFixed(1)}</span></span>
-              </div>
-            </div>
+        {/* Save Training */}
+        <div className="bg-gray-900 border border-gray-700 p-6 rounded-xl shadow-xl flex flex-col justify-center">
+          <div className="mb-6">
+            <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-2">
+              <Save className="text-strongs-gold" /> Salvar Simulação
+            </h3>
+            <p className="text-gray-400 text-sm">Salve este treino para acessá-lo futuramente no seu painel.</p>
           </div>
-
-          <div className="bg-gray-900/80 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-xl">
-            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Zap className="text-strongs-gold"/> Treinamentos</h3>
-            
-            <div className="space-y-6 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-              <div>
-                <h4 className="text-strongs-gold font-bold mb-2 uppercase text-sm sticky top-0 bg-gray-900/90 py-1 z-10">Ataque</h4>
-                {DRILLS.attack.map(renderDrillItem)}
-              </div>
-              <div>
-                <h4 className="text-strongs-gold font-bold mb-2 uppercase text-sm sticky top-0 bg-gray-900/90 py-1 z-10">Defesa</h4>
-                {DRILLS.defense.map(renderDrillItem)}
-              </div>
-              <div>
-                <h4 className="text-strongs-gold font-bold mb-2 uppercase text-sm sticky top-0 bg-gray-900/90 py-1 z-10">Posse</h4>
-                {DRILLS.possession.map(renderDrillItem)}
-              </div>
-              <div>
-                <h4 className="text-strongs-gold font-bold mb-2 uppercase text-sm sticky top-0 bg-gray-900/90 py-1 z-10">Físico e Mental</h4>
-                {DRILLS.physical.map(renderDrillItem)}
-              </div>
+          
+          {currentUser ? (
+            <div className="flex flex-col sm:flex-row w-full gap-4">
+              <input 
+                type="text" 
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                placeholder="Nome do Treino (ex: Mutante ST)"
+                className="w-full bg-black/50 border border-gray-700 rounded px-4 py-3 text-white focus:border-strongs-gold outline-none"
+              />
+              <button 
+                onClick={handleSaveTraining}
+                disabled={isSaving || Object.values(drills).every(v => v === 0)}
+                className="bg-strongs-gold text-strongs-darker px-8 py-3 rounded font-bold hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap"
+              >
+                <Save size={18} /> Salvar Treino
+              </button>
             </div>
-          </div>
-          <div className="bg-gray-900/80 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-xl">
-            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><List className="text-strongs-gold"/> Log de Treinos</h3>
-            
-            <div className="bg-black/50 border border-gray-800 rounded p-4 max-h-[300px] overflow-y-auto custom-scrollbar mb-4">
-              {drillSteps.length === 0 ? (
-                <p className="text-gray-500 text-sm italic text-center">Nenhum treino adicionado ainda.</p>
-              ) : (
-                renderLog()
-              )}
-            </div>
-
-            {currentUser && (
-              <div className="border-t border-gray-800 pt-4">
-                <label className="block text-xs text-gray-400 uppercase font-bold mb-2">Salvar Sequência de Treino</label>
-                <div className="flex gap-2">
-                  <input 
-                    type="text" 
-                    value={saveName}
-                    onChange={(e) => setSaveName(e.target.value)}
-                    placeholder="Ex: Mutante ST"
-                    className="flex-1 bg-black/50 border border-gray-700 rounded p-2 text-white text-sm focus:border-strongs-gold outline-none"
-                  />
-                  <button 
-                    onClick={handleSaveTraining}
-                    disabled={isSaving || drillSteps.length === 0}
-                    className="bg-strongs-gold text-strongs-darker px-4 py-2 rounded font-bold text-sm hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    <Save size={16} /> Salvar
-                  </button>
-                </div>
-              </div>
-            )}
-            {!currentUser && (
-              <p className="text-xs text-gray-500 text-center mt-4">Faça login para salvar seus treinos.</p>
-            )}
-          </div>
-
+          ) : (
+            <p className="text-gray-500 italic p-4 bg-black/30 rounded border border-gray-800">Faça login para salvar seus treinos.</p>
+          )}
         </div>
-
       </div>
     </div>
   );

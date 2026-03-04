@@ -257,26 +257,30 @@ export const Layout: React.FC<LayoutProps> = ({
       )}
 
       {/* Floating Action Button (FAB) for "Quero me Juntar" */}
-      <button
-        onClick={() => onNavigate('recrutamento')}
-        className="fixed bottom-40 right-6 z-40 bg-strongs-gold text-strongs-darker p-4 rounded-full shadow-[0_0_20px_rgba(255,215,0,0.5)] border-2 border-white hover:scale-110 transition-transform duration-300 group"
-        title="Inscreva-se em uma confederação"
-      >
-        <UserPlus size={32} strokeWidth={2.5} />
-        <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-black/80 text-white px-3 py-1 rounded text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none font-bold uppercase tracking-wide">
-          Recrutamento
-        </span>
-      </button>
+      {currentPage !== 'simulador' && (
+        <button
+          onClick={() => onNavigate('recrutamento')}
+          className="fixed bottom-40 right-6 z-40 bg-strongs-gold text-strongs-darker p-4 rounded-full shadow-[0_0_20px_rgba(255,215,0,0.5)] border-2 border-white hover:scale-110 transition-transform duration-300 group"
+          title="Inscreva-se em uma confederação"
+        >
+          <UserPlus size={32} strokeWidth={2.5} />
+          <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-black/80 text-white px-3 py-1 rounded text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none font-bold uppercase tracking-wide">
+            Recrutamento
+          </span>
+        </button>
+      )}
 
       {/* Floating Action Button (FAB) for "Consiga Maletas" */}
-      <button
-        onClick={() => setIsMaletasExpanded(true)}
-        className="fixed bottom-24 right-6 z-40 bg-gray-900 text-white px-4 py-3 rounded-full shadow-[0_0_20px_rgba(34,197,94,0.3)] border-2 border-green-500 hover:scale-105 transition-transform duration-300 flex items-center gap-2"
-        title="Consiga Maletas"
-      >
-        <Briefcase size={24} className="text-green-500" />
-        <span className="font-bold uppercase tracking-wide text-sm">Consiga Maletas</span>
-      </button>
+      {currentPage !== 'simulador' && (
+        <button
+          onClick={() => setIsMaletasExpanded(true)}
+          className="fixed bottom-24 right-6 z-40 bg-gray-900 text-white px-4 py-3 rounded-full shadow-[0_0_20px_rgba(34,197,94,0.3)] border-2 border-green-500 hover:scale-105 transition-transform duration-300 flex items-center gap-2"
+          title="Consiga Maletas"
+        >
+          <Briefcase size={24} className="text-green-500" />
+          <span className="font-bold uppercase tracking-wide text-sm">Consiga Maletas</span>
+        </button>
+      )}
 
       {/* Footer */}
       <footer className="bg-strongs-darker border-t border-gray-800 py-6 text-center text-gray-500 text-sm relative z-10">
