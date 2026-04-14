@@ -204,6 +204,7 @@ const App: React.FC = () => {
                 joinApplications: ensureArray(val.joinApplications),
                 archivedSeasons: ensureArray(val.archivedSeasons),
                 savedTrainings: ensureArray(val.savedTrainings),
+                espionagem: ensureArray(val.espionagem),
                 settings: val.settings || { activeWeek: 0 },
                 currentUser: sessionUser 
             };
@@ -341,6 +342,12 @@ const App: React.FC = () => {
       if (!db) return;
       const payload = sanitizeForFirebase(trainings);
       await set(ref(db, 'strongs_db/savedTrainings'), payload);
+  };
+
+  const handleUpdateEspionagem = async (espionagemData: EspionagemEntry[]) => {
+      if (!db) return;
+      const payload = sanitizeForFirebase(espionagemData);
+      await set(ref(db, 'strongs_db/espionagem'), payload);
   };
 
   // Special case: Resetting DB (Dangerous, keeps root write but only for owner)
@@ -1075,6 +1082,7 @@ const App: React.FC = () => {
             onUpdateSeasons={handleUpdateSeasons}
             onUpdateSettings={handleUpdateSettings} // Pass new settings handler
             onUpdateSavedTrainings={handleUpdateSavedTrainings}
+            onUpdateEspionagem={handleUpdateEspionagem}
             onResetDB={handleResetDB}
             onUpdateData={setData}
           />

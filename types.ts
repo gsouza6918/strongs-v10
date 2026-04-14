@@ -134,6 +134,17 @@ export interface ArchivedSeason {
   confederations: Confederation[];
 }
 
+export interface EspionagemEntry {
+  id: string;
+  tag: string;
+  confederationName: string;
+  wins: number;
+  draws: number;
+  losses: number;
+  team1: string;
+  points: number;
+}
+
 export interface AppData {
   users: User[];
   confederations: Confederation[];
@@ -145,5 +156,6 @@ export interface AppData {
   archivedSeasons: ArchivedSeason[];
   settings: GlobalSettings; // New Field
   savedTrainings?: SavedTraining[];
+  espionagem?: EspionagemEntry[];
   currentUser: User | null;
 }

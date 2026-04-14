@@ -2,12 +2,13 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import ReactQuill from 'react-quill-new'; // Importando o Editor Rico
-import { AppData, User, UserRole, Member, Confederation, NewsPost, JoinApplication, ArchivedSeason, Top100Entry, GameResult, Attendance, GlobalSettings, ConfTier } from '../types';
+import { AppData, User, UserRole, Member, Confederation, NewsPost, JoinApplication, ArchivedSeason, Top100Entry, GameResult, Attendance, GlobalSettings, ConfTier, SavedTraining, EspionagemEntry } from '../types';
 import { Button } from './Button';
-import { Trash2, ShieldCheck, ClipboardList, UserPlus, History, AlertOctagon, Users, Edit3, X, Save, CheckCircle2, XCircle, MinusCircle, UserMinus, UserCheck, Dumbbell, ArrowLeft, Settings, Lock, Plus, Power, Archive, AlertTriangle, FileEdit, Globe, EyeOff, MessageCircle, ExternalLink, Shield, Trophy } from 'lucide-react';
+import { Trash2, ShieldCheck, ClipboardList, UserPlus, History, AlertOctagon, Users, Edit3, X, Save, CheckCircle2, XCircle, MinusCircle, UserMinus, UserCheck, Dumbbell, ArrowLeft, Settings, Lock, Plus, Power, Archive, AlertTriangle, FileEdit, Globe, EyeOff, MessageCircle, ExternalLink, Shield, Trophy, Search } from 'lucide-react';
 import { loadData } from '../services/storage';
 import { calculateTop100Points } from '../utils';
 import { SavedTrainingsManagement } from './SavedTrainingsManagement';
+import { EspionagemManagement } from './EspionagemManagement';
 
 interface AdminPanelProps {
   data: AppData;
@@ -23,6 +24,7 @@ interface AdminPanelProps {
   onUpdateSeasons: (seasons: ArchivedSeason[]) => void;
   onUpdateSettings: (settings: GlobalSettings) => void;
   onUpdateSavedTrainings: (trainings: SavedTraining[]) => void;
+  onUpdateEspionagem: (espionagemData: EspionagemEntry[]) => void;
   onResetDB: (fullData: AppData) => void;
   onUpdateData: (data: AppData) => void;
 }
@@ -1278,7 +1280,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = (props) => {
   const isAdminOrMod = isOwnerOrAdmin || props.currentUser.role === 'MOD';
   const isManagerOrAbove = isAdminOrMod || props.currentUser.role === 'MANAGER';
   
-  const [activeTab, setActiveTab] = useState<'USERS' | 'CONFS' | 'NEWS' | 'JOIN_APPS' | 'SEASONS' | 'TOP100' | 'CONFIG' | 'TREINOS' | 'RESET'>(isManagerOrAbove ? 'CONFS' : 'TREINOS');
+  const [activeTab, setActiveTab] = useState<'USERS' | 'CONFS' | 'NEWS' | 'JOIN_APPS' | 'SEASONS' | 'TOP100' | 'CONFIG' | 'TREINOS' | 'ESPIONAGEM' | 'RESET'>(isManagerOrAbove ? 'CONFS' : 'TREINOS');
 
   const allTabs = [
     { id: 'USERS', icon: Users, label: 'Usuários', adminOnly: true },
@@ -1287,6 +1289,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = (props) => {
     { id: 'JOIN_APPS', icon: UserPlus, label: 'Solicitações', adminOnly: true },
     { id: 'SEASONS', icon: History, label: 'Arquivo', ownerOrAdminOnly: true },
     { id: 'TOP100', icon: Trophy, label: 'Top 100', ownerOrAdminOnly: true },
+    { id: 'ESPIONAGEM', icon: Search, label: 'Espionagem', ownerOrAdminOnly: true },
     { id: 'TREINOS', icon: Dumbbell, label: 'Treinos Salvos', adminOnly: false },
   ];
 
@@ -1333,6 +1336,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = (props) => {
          {activeTab === 'JOIN_APPS' && <JoinRequestsManagement data={props.data} onUpdateJoinApps={props.onUpdateJoinApps} />}
          {activeTab === 'SEASONS' && <SeasonsManagement data={props.data} onUpdateSeasons={props.onUpdateSeasons} onSaveMember={props.onSaveMember} />}
          {activeTab === 'TOP100' && <Top100Management data={props.data} onUpdateTop100={props.onUpdateTop100} />}
+         {activeTab === 'ESPIONAGEM' && <EspionagemManagement data={props.data.espionagem || []} onUpdate={props.onUpdateEspionagem} />}
          {activeTab === 'TREINOS' && <SavedTrainingsManagement data={props.data} currentUser={props.currentUser} onUpdateData={props.onUpdateData} onUpdateSavedTrainings={props.onUpdateSavedTrainings} />}
          {activeTab === 'CONFIG' && isOwner && <SettingsManagement data={props.data} onUpdateSettings={props.onUpdateSettings} />}
       </div>
