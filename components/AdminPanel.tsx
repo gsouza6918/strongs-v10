@@ -1309,16 +1309,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = (props) => {
 
   const allTabs = [
     { id: 'USERS', icon: Users, label: 'Usuários', adminOnly: true },
-    { id: 'CONFS', icon: ShieldCheck, label: 'Confederações', managerOrAboveOnly: true },
-    { id: 'NEWS', icon: ClipboardList, label: 'Notícias', ownerOrAdminOnly: true },
-    { id: 'JOIN_APPS', icon: UserPlus, label: 'Solicitações', adminOnly: true },
-    { id: 'SEASONS', icon: History, label: 'Arquivo', ownerOrAdminOnly: true },
-    { id: 'TOP100', icon: Trophy, label: 'Top 100', ownerOrAdminOnly: true },
-    { id: 'ESPIONAGEM', icon: Search, label: 'Espionagem', ownerOrAdminOnly: true },
-    { id: 'TREINOS', icon: Dumbbell, label: 'Treinos Salvos', adminOnly: false },
+    { id: 'CONFS', icon: ShieldCheck, label: 'Confederações', managerOrAboveOnly: true, ownerOnly: false, ownerOrAdminOnly: false },
+    { id: 'NEWS', icon: ClipboardList, label: 'Notícias', ownerOrAdminOnly: true, ownerOnly: false, adminOnly: false, managerOrAboveOnly: false },
+    { id: 'JOIN_APPS', icon: UserPlus, label: 'Solicitações', adminOnly: true, ownerOnly: false, ownerOrAdminOnly: false, managerOrAboveOnly: false },
+    { id: 'SEASONS', icon: History, label: 'Arquivo', ownerOrAdminOnly: true, ownerOnly: false, adminOnly: false, managerOrAboveOnly: false },
+    { id: 'TOP100', icon: Trophy, label: 'Top 100', ownerOrAdminOnly: true, ownerOnly: false, adminOnly: false, managerOrAboveOnly: false },
+    { id: 'ESPIONAGEM', icon: Search, label: 'Espionagem', ownerOnly: true, ownerOrAdminOnly: false, adminOnly: false, managerOrAboveOnly: false },
+    { id: 'TREINOS', icon: Dumbbell, label: 'Treinos Salvos', adminOnly: false, ownerOnly: false, ownerOrAdminOnly: false, managerOrAboveOnly: false },
   ];
 
   const tabs = allTabs.filter(tab => {
+      if (tab.ownerOnly) return isOwner;
       if (tab.ownerOrAdminOnly) return isOwnerOrAdmin;
       if (tab.managerOrAboveOnly) return isManagerOrAbove;
       if (tab.adminOnly) return isAdminOrMod;
@@ -1361,7 +1362,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = (props) => {
          {activeTab === 'JOIN_APPS' && <JoinRequestsManagement data={props.data} onUpdateJoinApps={props.onUpdateJoinApps} />}
          {activeTab === 'SEASONS' && <SeasonsManagement data={props.data} onUpdateSeasons={props.onUpdateSeasons} onSaveMember={props.onSaveMember} />}
          {activeTab === 'TOP100' && <Top100Management data={props.data} onUpdateTop100={props.onUpdateTop100} />}
-         {activeTab === 'ESPIONAGEM' && <EspionagemManagement data={props.data.espionagem || []} onUpdate={props.onUpdateEspionagem} />}
+         {activeTab === 'ESPIONAGEM' && isOwner && <EspionagemManagement data={props.data.espionagem || []} onUpdate={props.onUpdateEspionagem} />}
          {activeTab === 'TREINOS' && <SavedTrainingsManagement data={props.data} currentUser={props.currentUser} onUpdateData={props.onUpdateData} onUpdateSavedTrainings={props.onUpdateSavedTrainings} />}
          {activeTab === 'CONFIG' && isOwner && <SettingsManagement data={props.data} onUpdateSettings={props.onUpdateSettings} />}
       </div>
