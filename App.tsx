@@ -350,6 +350,30 @@ const App: React.FC = () => {
       await set(ref(db, 'strongs_db/espionagem'), payload);
   };
 
+  const handleDeleteExtensiveConfederation = async (confId: string) => {
+      if (!db || !data) return;
+      
+      const confName = data.confederations.find(c => c.id === confId)?.name;
+      const newConfs = data.confederations.filter(c => c.id !== confId);
+      const newTop100 = data.top100History.filter(h => h.confId !== confId);
+      
+      // Delete from espionagem if applicable (based on name)
+      let newEspionagem = data.espionagem || [];
+      if (confName) {
+          newEspionagem = newEspionagem.filter(e => e.confederationName !== confName);
+      }
+
+      await handleUpdateConfs(newConfs);
+      await handleUpdateTop100(newTop100);
+      await handleUpdateEspionagem(newEspionagem);
+
+      // Now iterate over members of this conf and delete them
+      const membersToDelete = data.members.filter(m => m.confId === confId);
+      for (const m of membersToDelete) {
+          await handleDeleteMember(m.id);
+      }
+  };
+
   // Special case: Resetting DB (Dangerous, keeps root write but only for owner)
   const handleResetDB = async (fullData: AppData) => {
       if (!db) return;
@@ -1083,6 +1107,7 @@ const App: React.FC = () => {
             onUpdateSettings={handleUpdateSettings} // Pass new settings handler
             onUpdateSavedTrainings={handleUpdateSavedTrainings}
             onUpdateEspionagem={handleUpdateEspionagem}
+            onDeleteExtensiveConfederation={handleDeleteExtensiveConfederation}
             onResetDB={handleResetDB}
             onUpdateData={setData}
           />

@@ -25,6 +25,7 @@ interface AdminPanelProps {
   onUpdateSettings: (settings: GlobalSettings) => void;
   onUpdateSavedTrainings: (trainings: SavedTraining[]) => void;
   onUpdateEspionagem: (espionagemData: EspionagemEntry[]) => void;
+  onDeleteExtensiveConfederation: (confId: string) => void;
   onResetDB: (fullData: AppData) => void;
   onUpdateData: (data: AppData) => void;
 }
@@ -630,8 +631,9 @@ const ConfManagement: React.FC<{
     onSaveMember: (m: Member) => void, 
     onDeleteMember: (id: string) => void, 
     onUpdateConfs: (c: Confederation[]) => void,
-    onUpdateUsers: (u: User[]) => void
-}> = ({ data, currentUser, onSaveMember, onDeleteMember, onUpdateConfs }) => {
+    onUpdateUsers: (u: User[]) => void,
+    onDeleteConfederation: (confId: string) => void
+}> = ({ data, currentUser, onSaveMember, onDeleteMember, onUpdateConfs, onDeleteConfederation }) => {
     const [selectedConfId, setSelectedConfId] = useState<string | null>(null);
     const [editingMember, setEditingMember] = useState<Member | null>(null);
     const [editingConf, setEditingConf] = useState<Confederation | null>(null); // For edit modal
@@ -652,6 +654,17 @@ const ConfManagement: React.FC<{
         }
         onUpdateConfs(newConfs);
         setEditingConf(null);
+    };
+
+    const handleDeleteConf = (confId: string, confName: string) => {
+        if (!['OWNER', 'ADMIN'].includes(currentUser.role)) {
+            alert('Você não tem permissão para realizar esta ação.');
+            return;
+        }
+        if (window.confirm(`ATENÇÃO: Você está prestes a excluir DEFINITIVAMENTE a confederação "${confName}".\n\nIsso apagará TODOS os membros vinculados, dados na aba Espionagem e o histórico no Top 100 desta confederação.\n\nEsta ação NÃO pode ser desfeita. Tem certeza?`)) {
+            onDeleteConfederation(confId);
+            if (selectedConfId === confId) setSelectedConfId(null);
+        }
     };
 
     const handleAddMember = () => {
@@ -742,14 +755,26 @@ const ConfManagement: React.FC<{
                                 </div>
                             </div>
                             
-                            {/* Edit Button (Only for admins/owners) */}
+                            {/* Edit/Delete Buttons (Only for admins/owners) */}
                             {isOwnerOrAdmin && (
-                                <button 
-                                    onClick={(e) => { e.stopPropagation(); setEditingConf(conf); }}
-                                    className="absolute top-3 right-3 text-gray-500 hover:text-white p-1 rounded hover:bg-gray-600"
-                                >
-                                    <Edit3 size={14} />
-                                </button>
+                                <div className="absolute top-3 right-3 flex gap-1">
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); setEditingConf(conf); }}
+                                        className="text-gray-500 hover:text-white p-1 rounded hover:bg-gray-600"
+                                        title="Editar Confederação"
+                                    >
+                                        <Edit3 size={14} />
+                                    </button>
+                                    {['OWNER', 'ADMIN'].includes(currentUser.role) && (
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); handleDeleteConf(conf.id, conf.name); }}
+                                            className="text-gray-500 hover:text-red-500 p-1 rounded hover:bg-gray-600"
+                                            title="Excluir Confederação em Definitivo"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    )}
+                                </div>
                             )}
                         </div>
                     ))}
@@ -1331,7 +1356,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = (props) => {
 
       <div className="min-h-[500px]">
          {activeTab === 'USERS' && <UserManagement data={props.data} currentUser={props.currentUser} onUpdateUsers={props.onUpdateUsers} onDeleteUser={props.onDeleteUser} />}
-         {activeTab === 'CONFS' && <ConfManagement data={props.data} currentUser={props.currentUser} onSaveMember={props.onSaveMember} onDeleteMember={props.onDeleteMember} onUpdateConfs={props.onUpdateConfs} onUpdateUsers={props.onUpdateUsers} />}
+         {activeTab === 'CONFS' && <ConfManagement data={props.data} currentUser={props.currentUser} onSaveMember={props.onSaveMember} onDeleteMember={props.onDeleteMember} onUpdateConfs={props.onUpdateConfs} onUpdateUsers={props.onUpdateUsers} onDeleteConfederation={props.onDeleteExtensiveConfederation} />}
          {activeTab === 'NEWS' && <NewsManagement data={props.data} onUpdateNews={props.onUpdateNews} />}
          {activeTab === 'JOIN_APPS' && <JoinRequestsManagement data={props.data} onUpdateJoinApps={props.onUpdateJoinApps} />}
          {activeTab === 'SEASONS' && <SeasonsManagement data={props.data} onUpdateSeasons={props.onUpdateSeasons} onSaveMember={props.onSaveMember} />}
