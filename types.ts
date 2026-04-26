@@ -149,6 +149,7 @@ export interface EspionagemEntry {
   currentDraws?: number;
   currentLosses?: number;
   team1Placements?: (number | null)[];
+  resultadoSemanal?: (number | null)[];
 }
 
 export interface AppData {

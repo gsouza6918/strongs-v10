@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { EspionagemEntry } from '../types';
 import { Button } from './Button';
-import { Trash2, Plus, Trophy, Edit3, Save, X, RefreshCw } from 'lucide-react';
+import { Trash2, Plus, Trophy, Edit3, Save, X, RefreshCw, Maximize2, Minimize2 } from 'lucide-react';
 
 interface EspionagemManagementProps {
   data: EspionagemEntry[];
@@ -9,6 +9,7 @@ interface EspionagemManagementProps {
 }
 
 export const EspionagemManagement: React.FC<EspionagemManagementProps> = ({ data, onUpdate }) => {
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const [newEntry, setNewEntry] = useState<Partial<EspionagemEntry>>({
     confederationName: '',
     tag: '',
@@ -29,12 +30,23 @@ export const EspionagemManagement: React.FC<EspionagemManagementProps> = ({ data
       else if (val === 3) p += 40;
       else if (val === 4) p += 20;
     });
+    (e.resultadoSemanal || []).forEach(val => {
+      if (val === 1) p += 120;
+      else if (val === 2) p += 80;
+      else if (val === 3) p += 40;
+      else if (val === 4) p += 20;
+    });
     return p;
   };
 
   const calcLostPoints = (e: Partial<EspionagemEntry>) => {
     let l = (e.currentDraws || 0) * 8 + (e.currentLosses || 0) * 12;
     (e.team1Placements || []).forEach(val => {
+      if (val === 2) l += 40;
+      else if (val === 3) l += 80;
+      else if (val === 4) l += 100;
+    });
+    (e.resultadoSemanal || []).forEach(val => {
       if (val === 2) l += 40;
       else if (val === 3) l += 80;
       else if (val === 4) l += 100;
@@ -60,7 +72,8 @@ export const EspionagemManagement: React.FC<EspionagemManagementProps> = ({ data
       currentWins: 0,
       currentDraws: 0,
       currentLosses: 0,
-      team1Placements: [null, null, null, null]
+      team1Placements: [null, null, null, null],
+      resultadoSemanal: [null, null, null, null]
     };
 
     onUpdate([...data, entry]);
@@ -137,6 +150,17 @@ export const EspionagemManagement: React.FC<EspionagemManagementProps> = ({ data
     }));
   };
 
+  const handleResultadoSemanalChange = (id: string, index: number, value: string) => {
+    onUpdate(data.map(entry => {
+      if (entry.id === id) {
+        const placements = [...(entry.resultadoSemanal || [null, null, null, null])];
+        placements[index] = value ? parseInt(value) as 1|2|3|4 : null;
+        return { ...entry, resultadoSemanal: placements };
+      }
+      return entry;
+    }));
+  };
+
   const handleSeasonReset = () => {
     if (window.confirm("ATENÇÃO: Você irá somar os dados da temporada atual ao histórico de todas as confederações e ZERAR a temporada atual. Deseja prosseguir?")) {
       onUpdate(data.map(entry => {
@@ -154,7 +178,8 @@ export const EspionagemManagement: React.FC<EspionagemManagementProps> = ({ data
           currentWins: 0,
           currentDraws: 0,
           currentLosses: 0,
-          team1Placements: [null, null, null, null]
+          team1Placements: [null, null, null, null],
+          resultadoSemanal: [null, null, null, null]
         };
       }));
     }
@@ -165,11 +190,12 @@ export const EspionagemManagement: React.FC<EspionagemManagementProps> = ({ data
   const sortedData = [...data].sort((a, b) => getTotalPoints(b) - getTotalPoints(a));
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      <div className="bg-gray-900 border border-gray-800 p-6 rounded-xl shadow-xl">
-        <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-          <Plus className="text-strongs-gold" /> Adicionar Registro de Espionagem
-        </h3>
+    <div className={`space-y-6 animate-fadeIn ${isFullScreen ? 'fixed inset-0 z-50 bg-black/95 p-4 overflow-y-auto' : ''}`}>
+      {!isFullScreen && (
+        <div className="bg-gray-900 border border-gray-800 p-6 rounded-xl shadow-xl">
+          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <Plus className="text-strongs-gold" /> Adicionar Registro de Espionagem
+          </h3>
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
           <div className="md:col-span-2">
             <label className="text-xs text-gray-400 font-bold uppercase block mb-1">Confederação</label>
@@ -231,7 +257,9 @@ export const EspionagemManagement: React.FC<EspionagemManagementProps> = ({ data
         <Button onClick={handleAdd} className="w-full md:w-auto">Adicionar Registro</Button>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl shadow-xl overflow-hidden">
+      )}
+
+      <div className={`bg-gray-900 border border-gray-800 rounded-xl shadow-xl overflow-hidden ${isFullScreen ? 'min-h-[90vh]' : ''}`}>
         <div className="p-4 border-b border-gray-800 flex justify-between items-center bg-black/20 flex-wrap gap-4">
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
             <Trophy className="text-strongs-gold" /> Tabela de Espionagem
@@ -241,6 +269,13 @@ export const EspionagemManagement: React.FC<EspionagemManagementProps> = ({ data
             <Button variant="danger" className="text-xs px-3 py-1" onClick={handleSeasonReset}>
               <RefreshCw size={14} className="mr-1 inline" /> Zerar Temporada
             </Button>
+            <button 
+              onClick={() => setIsFullScreen(!isFullScreen)} 
+              className="text-gray-400 hover:text-white p-1 rounded hover:bg-white/10 transition-colors"
+              title={isFullScreen ? "Sair da Tela Cheia" : "Tela Cheia"}
+            >
+              {isFullScreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+            </button>
           </div>
         </div>
         
@@ -253,6 +288,7 @@ export const EspionagemManagement: React.FC<EspionagemManagementProps> = ({ data
                 <th className="px-2 py-2 font-bold text-center border-r border-gray-700 border-b" colSpan={3}>Histórico</th>
                 <th className="px-2 py-2 font-bold text-center border-r border-gray-700 border-b" colSpan={3}>Temporada Atual</th>
                 <th className="px-3 py-3 font-bold text-center border-r border-gray-700" rowSpan={2}>Time 1</th>
+                <th className="px-3 py-3 font-bold text-center border-r border-gray-700" rowSpan={2}>Resultado Semanal</th>
                 <th className="px-3 py-3 font-bold text-center border-r border-gray-700 text-strongs-gold" rowSpan={2}>Pontos<br/>Totais</th>
                 <th className="px-3 py-3 font-bold text-center border-r border-gray-700 text-red-500" rowSpan={2}>Pontos<br/>Perdidos</th>
                 <th className="px-4 py-3 font-bold text-right" rowSpan={2}>Ações</th>
@@ -282,6 +318,7 @@ export const EspionagemManagement: React.FC<EspionagemManagementProps> = ({ data
                       <td className="px-1 py-2 border-r border-gray-800 text-center"><input type="number" value={editData.draws} onChange={e => setEditData({...editData, draws: Number(e.target.value)})} className="w-12 bg-black/40 border border-gray-600 rounded p-1 text-white text-xs text-center mx-auto block" /></td>
                       <td className="px-1 py-2 border-r border-gray-800 text-center"><input type="number" value={editData.losses} onChange={e => setEditData({...editData, losses: Number(e.target.value)})} className="w-12 bg-black/40 border border-gray-600 rounded p-1 text-white text-xs text-center mx-auto block" /></td>
                       <td colSpan={3} className="px-2 py-2 border-r border-gray-800 text-center text-xs text-gray-500">Utilize a visão normal para editar</td>
+                      <td className="px-2 py-2 border-r border-gray-800 text-center text-xs text-gray-500">Utilize a visão normal para editar</td>
                       <td className="px-2 py-2 border-r border-gray-800 text-center text-xs text-gray-500">Utilize a visão normal para editar</td>
                       <td className="px-1 py-2 border-r border-gray-800 text-center"><input type="number" value={editData.points} onChange={e => setEditData({...editData, points: Number(e.target.value)})} className="w-16 bg-black/40 border border-gray-600 rounded p-1 text-white text-xs text-center mx-auto block" title="Pontos Históricos" /></td>
                       <td className="px-2 py-2 border-r border-gray-800 text-center text-xs text-gray-500">-</td>
@@ -333,6 +370,25 @@ export const EspionagemManagement: React.FC<EspionagemManagementProps> = ({ data
                               key={i}
                               value={entry.team1Placements?.[i] || ''}
                               onChange={(e) => handlePlacementChange(entry.id, i, e.target.value)}
+                              className="bg-black/50 border border-gray-600 rounded text-xs text-white p-0.5 outline-none cursor-pointer hover:border-gray-500 appearance-none text-center min-w-8"
+                            >
+                              <option value="">-</option>
+                              <option value="1">1º</option>
+                              <option value="2">2º</option>
+                              <option value="3">3º</option>
+                              <option value="4">4º</option>
+                            </select>
+                          ))}
+                        </div>
+                      </td>
+
+                      <td className="px-2 py-3 border-r border-gray-800">
+                        <div className="flex items-center justify-center gap-1">
+                          {[0, 1, 2, 3].map(i => (
+                            <select 
+                              key={`res_${i}`}
+                              value={entry.resultadoSemanal?.[i] || ''}
+                              onChange={(e) => handleResultadoSemanalChange(entry.id, i, e.target.value)}
                               className="bg-black/50 border border-gray-600 rounded text-xs text-white p-0.5 outline-none cursor-pointer hover:border-gray-500 appearance-none text-center min-w-8"
                             >
                               <option value="">-</option>
