@@ -141,8 +141,14 @@ export interface EspionagemEntry {
   wins: number;
   draws: number;
   losses: number;
-  team1: string;
-  points: number;
+  team1: string; // Legacy
+  points: number; // Historical points
+  
+  // Current Season Stats
+  currentWins?: number;
+  currentDraws?: number;
+  currentLosses?: number;
+  team1Placements?: (number | null)[];
 }
 
 export interface AppData {
