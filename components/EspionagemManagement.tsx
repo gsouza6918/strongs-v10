@@ -130,11 +130,13 @@ export const EspionagemManagement: React.FC<EspionagemManagementProps> = ({ data
     setEditData({});
   };
 
-  const handleIncrement = (id: string, field: 'currentWins' | 'currentDraws' | 'currentLosses', delta: number) => {
+  const handleCurrentStatChange = (id: string, field: 'currentWins' | 'currentDraws' | 'currentLosses', newValue: number) => {
     onUpdate(data.map(entry => {
       if (entry.id === id) {
-        const val = (entry[field] || 0) + delta;
-        if (val < 0) return entry; // Not allowing negative current stats
+        if (newValue < 0) return entry; // Not allowing negative current stats
+        
+        const oldValue = entry[field] || 0;
+        const delta = newValue - oldValue;
         
         let histField: 'wins' | 'draws' | 'losses' = 'wins';
         if (field === 'currentDraws') histField = 'draws';
@@ -142,7 +144,29 @@ export const EspionagemManagement: React.FC<EspionagemManagementProps> = ({ data
 
         return { 
           ...entry, 
-          [field]: val,
+          [field]: newValue,
+          [histField]: Math.max(0, (entry[histField] || 0) + delta)
+        };
+      }
+      return entry;
+    }));
+  };
+
+  const handleIncrement = (id: string, field: 'currentWins' | 'currentDraws' | 'currentLosses', delta: number) => {
+    onUpdate(data.map(entry => {
+      if (entry.id === id) {
+        const oldValue = entry[field] || 0;
+        const newValue = oldValue + delta;
+        
+        if (newValue < 0) return entry;
+        
+        let histField: 'wins' | 'draws' | 'losses' = 'wins';
+        if (field === 'currentDraws') histField = 'draws';
+        if (field === 'currentLosses') histField = 'losses';
+
+        return { 
+          ...entry, 
+          [field]: newValue,
           [histField]: Math.max(0, (entry[histField] || 0) + delta)
         };
       }
@@ -195,7 +219,7 @@ export const EspionagemManagement: React.FC<EspionagemManagementProps> = ({ data
   const sortedData = [...data].sort((a, b) => getTotalPoints(b) - getTotalPoints(a));
 
   const content = (
-    <div className={`space-y-6 animate-fadeIn ${isFullScreen ? 'fixed inset-0 z-50 bg-black/95 p-4 overflow-y-auto' : ''}`}>
+    <div className={isFullScreen ? 'fixed top-0 left-0 w-full h-screen z-[9999] bg-[#020f14] p-4 overflow-y-auto' : 'space-y-6 animate-fadeIn'}>
       {!isFullScreen && (
         <div className="bg-gray-900 border border-gray-800 p-6 rounded-xl shadow-xl">
           <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
@@ -345,26 +369,40 @@ export const EspionagemManagement: React.FC<EspionagemManagementProps> = ({ data
                       <td className="px-2 py-3 text-center border-r border-gray-800 text-gray-400">{entry.draws || 0}</td>
                       <td className="px-2 py-3 text-center border-r border-gray-800 text-gray-400">{entry.losses || 0}</td>
                       
-                      {/* Current Season V/E/D */}
-                      <td className="px-1 py-2 text-center border-r border-gray-800">
+                                        <td className="px-1 py-2 text-center border-r border-gray-800">
                         <div className="flex items-center justify-center gap-1">
                           <button onClick={() => handleIncrement(entry.id, 'currentWins', -1)} className="text-gray-500 hover:text-white px-1 leading-none font-bold text-lg">-</button>
-                          <span className="w-4 font-bold text-green-400">{entry.currentWins || 0}</span>
+                          <input 
+                            type="number"
+                            value={entry.currentWins || 0}
+                            onChange={(e) => handleCurrentStatChange(entry.id, 'currentWins', parseInt(e.target.value) || 0)}
+                            className="w-10 bg-transparent text-center text-green-400 font-bold p-0 border-b border-transparent hover:border-gray-600 focus:border-green-400 focus:bg-black/40 outline-none [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none transition-all"
+                          />
                           <button onClick={() => handleIncrement(entry.id, 'currentWins', 1)} className="text-gray-500 hover:text-green-500 px-1 leading-none font-bold text-lg">+</button>
                         </div>
                       </td>
                       <td className="px-1 py-2 text-center border-r border-gray-800">
                         <div className="flex items-center justify-center gap-1">
                           <button onClick={() => handleIncrement(entry.id, 'currentDraws', -1)} className="text-gray-500 hover:text-white px-1 leading-none font-bold text-lg">-</button>
-                          <span className="w-4 font-bold text-yellow-400">{entry.currentDraws || 0}</span>
+                          <input 
+                            type="number"
+                            value={entry.currentDraws || 0}
+                            onChange={(e) => handleCurrentStatChange(entry.id, 'currentDraws', parseInt(e.target.value) || 0)}
+                            className="w-10 bg-transparent text-center text-yellow-400 font-bold p-0 border-b border-transparent hover:border-gray-600 focus:border-yellow-400 focus:bg-black/40 outline-none [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none transition-all"
+                          />
                           <button onClick={() => handleIncrement(entry.id, 'currentDraws', 1)} className="text-gray-500 hover:text-yellow-500 px-1 leading-none font-bold text-lg">+</button>
                         </div>
                       </td>
                       <td className="px-1 py-2 text-center border-r border-gray-800">
                         <div className="flex items-center justify-center gap-1">
                           <button onClick={() => handleIncrement(entry.id, 'currentLosses', -1)} className="text-gray-500 hover:text-white px-1 leading-none font-bold text-lg">-</button>
-                          <span className="w-4 font-bold text-red-400">{entry.currentLosses || 0}</span>
-                          <button onClick={() => handleIncrement(entry.id, 'currentLosses', 1)} className="text-gray-500 hover:text-red-500 px-1 leading-none font-bold text-lg">+</button>
+                          <input 
+                            type="number"
+                            value={entry.currentLosses || 0}
+                            onChange={(e) => handleCurrentStatChange(entry.id, 'currentLosses', parseInt(e.target.value) || 0)}
+                            className="w-10 bg-transparent text-center text-red-500 font-bold p-0 border-b border-transparent hover:border-gray-600 focus:border-red-500 focus:bg-black/40 outline-none [-moz-appearance:_textfield] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none transition-all"
+                          />
+                          <button onClick={() => handleIncrement(entry.id, 'currentLosses', 1)} className="text-gray-500 hover:text-red-400 px-1 leading-none font-bold text-lg">+</button>
                         </div>
                       </td>
 
