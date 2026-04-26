@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { EspionagemEntry } from '../types';
 import { Button } from './Button';
 import { Trash2, Plus, Trophy, Edit3, Save, X, RefreshCw, Maximize2, Minimize2 } from 'lucide-react';
@@ -189,7 +190,7 @@ export const EspionagemManagement: React.FC<EspionagemManagementProps> = ({ data
 
   const sortedData = [...data].sort((a, b) => getTotalPoints(b) - getTotalPoints(a));
 
-  return (
+  const content = (
     <div className={`space-y-6 animate-fadeIn ${isFullScreen ? 'fixed inset-0 z-50 bg-black/95 p-4 overflow-y-auto' : ''}`}>
       {!isFullScreen && (
         <div className="bg-gray-900 border border-gray-800 p-6 rounded-xl shadow-xl">
@@ -437,4 +438,6 @@ export const EspionagemManagement: React.FC<EspionagemManagementProps> = ({ data
       </div>
     </div>
   );
+
+  return isFullScreen ? createPortal(content, document.body) : content;
 };
