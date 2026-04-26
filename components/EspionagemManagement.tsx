@@ -134,7 +134,17 @@ export const EspionagemManagement: React.FC<EspionagemManagementProps> = ({ data
     onUpdate(data.map(entry => {
       if (entry.id === id) {
         const val = (entry[field] || 0) + delta;
-        return { ...entry, [field]: Math.max(0, val) };
+        if (val < 0) return entry; // Not allowing negative current stats
+        
+        let histField: 'wins' | 'draws' | 'losses' = 'wins';
+        if (field === 'currentDraws') histField = 'draws';
+        if (field === 'currentLosses') histField = 'losses';
+
+        return { 
+          ...entry, 
+          [field]: val,
+          [histField]: Math.max(0, (entry[histField] || 0) + delta)
+        };
       }
       return entry;
     }));
@@ -163,18 +173,12 @@ export const EspionagemManagement: React.FC<EspionagemManagementProps> = ({ data
   };
 
   const handleSeasonReset = () => {
-    if (window.confirm("ATENÇÃO: Você irá somar os dados da temporada atual ao histórico de todas as confederações e ZERAR a temporada atual. Deseja prosseguir?")) {
+    if (window.confirm("ATENÇÃO: Você irá somar a pontuação da temporada atual ao histórico e ZERAR a temporada atual. As vitórias, empates e derrotas já foram contabilizadas no histórico em tempo real. Deseja prosseguir?")) {
       onUpdate(data.map(entry => {
-        const curWins = entry.currentWins || 0;
-        const curDraws = entry.currentDraws || 0;
-        const curLosses = entry.currentLosses || 0;
         const curPoints = calcCurrentPoints(entry);
         
         return {
           ...entry,
-          wins: (entry.wins || 0) + curWins,
-          draws: (entry.draws || 0) + curDraws,
-          losses: (entry.losses || 0) + curLosses,
           points: (entry.points || 0) + curPoints,
           currentWins: 0,
           currentDraws: 0,
