@@ -303,8 +303,13 @@ export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, 
           const inc = increments[attr] || 0;
           const simulated = current + inc;
 
+          let rowBgClasses = '';
+          if (catName === 'ATAQUE') rowBgClasses = isWhite ? 'bg-red-900/50 text-white' : 'bg-red-500/10 text-gray-400';
+          else if (catName === 'DEFESA' || catName === 'GOLEIRO') rowBgClasses = isWhite ? 'bg-green-900/50 text-white' : 'bg-green-500/10 text-gray-400';
+          else if (catName === 'FÍSICO E MENTAL') rowBgClasses = isWhite ? 'bg-blue-900/50 text-white' : 'bg-blue-500/10 text-gray-400';
+
           return (
-            <tr key={attr} className={`group ${isWhite ? 'bg-gray-700 md:bg-gray-800 text-white' : 'bg-gray-900 md:bg-gray-900/40 text-gray-600 md:text-gray-500'} hover:bg-gray-700/80 transition-colors relative`}>
+            <tr key={attr} className={`group ${rowBgClasses} hover:bg-white/5 transition-colors relative`}>
               {idx === 0 && (
                 <td rowSpan={attrs.length} className={`border border-gray-600 ${catColor} w-8`}>
                   <div className="[writing-mode:vertical-rl] rotate-180 whitespace-nowrap text-xs font-bold mx-auto">

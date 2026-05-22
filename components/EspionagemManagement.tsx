@@ -197,13 +197,11 @@ export const EspionagemManagement: React.FC<EspionagemManagementProps> = ({ data
   };
 
   const handleSeasonReset = () => {
-    if (window.confirm("ATENÇÃO: Você irá somar a pontuação da temporada atual ao histórico e ZERAR a temporada atual. As vitórias, empates e derrotas já foram contabilizadas no histórico em tempo real. Deseja prosseguir?")) {
+    if (window.confirm("ATENÇÃO: Você irá ZERAR a temporada atual e também os Pontos Totais. As vitórias, empates e derrotas já foram contabilizadas no histórico em tempo real e serão mantidas. Deseja prosseguir?")) {
       onUpdate(data.map(entry => {
-        const curPoints = calcCurrentPoints(entry);
-        
         return {
           ...entry,
-          points: (entry.points || 0) + curPoints,
+          points: 0,
           currentWins: 0,
           currentDraws: 0,
           currentLosses: 0,
