@@ -1095,10 +1095,10 @@ const App: React.FC = () => {
           <meta name="description" content="Acompanhe rankings, gerencie sua confederação e faça parte da história da Strongs Brazil." />
           <meta property="og:title" content="Strongs Brazil" />
           <meta property="og:description" content="Acompanhe rankings, gerencie sua confederação e faça parte da história da Strongs Brazil." />
-          <meta property="og:image" content="https://strongsbrazil.com/banner.png" />
+          <meta property="og:image" content="https://i.imgur.com/nArNLdF.png" />
           <meta name="twitter:title" content="Strongs Brazil" />
           <meta name="twitter:description" content="Acompanhe rankings, gerencie sua confederação e faça parte da história da Strongs Brazil." />
-          <meta name="twitter:image" content="https://strongsbrazil.com/banner.png" />
+          <meta name="twitter:image" content="https://i.imgur.com/nArNLdF.png" />
         </Helmet>
       )}
 
