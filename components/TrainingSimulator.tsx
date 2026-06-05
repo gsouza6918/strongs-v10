@@ -322,29 +322,29 @@ export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, 
                 <div className="absolute top-1/2 left-0 w-full border-t border-dashed border-gray-500/20 -translate-y-1/2 pointer-events-none"></div>
                 <span className={`relative z-10 px-1 ${isWhite ? 'ml-1 md:ml-0 text-strongs-gold md:text-white' : ''}`}>{attr}</span>
               </td>
-              <td className="border border-gray-600 p-0 w-16 relative">
+              <td className="border border-gray-600 p-0 w-[42px] min-w-[42px] max-w-[42px] relative">
                 <div className="absolute top-1/2 left-0 w-full border-t border-dashed border-gray-500/20 -translate-y-1/2 pointer-events-none"></div>
                 <input 
                   type="number" 
                   value={attributes[attr] || ''} 
                   onChange={(e) => handleAttrChange(attr, e.target.value)}
-                  className={`w-full h-full bg-transparent text-center outline-none font-bold relative z-10 ${isWhite ? 'text-white' : ''}`}
+                  className={`w-full h-full min-w-0 p-0 m-0 bg-transparent text-center text-[10px] outline-none font-bold relative z-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${isWhite ? 'text-white' : ''}`}
                 />
               </td>
-              <td className="border border-gray-600 w-16 relative">
+              <td className="border border-gray-600 w-[42px] min-w-[42px] max-w-[42px] text-xs relative text-center">
                 <div className="absolute top-1/2 left-0 w-full border-t border-dashed border-gray-500/20 -translate-y-1/2 pointer-events-none"></div>
-                <span className="relative z-10 px-1">{real}%</span>
+                <span className="relative z-10">{real}%</span>
               </td>
-              <td className={`border border-gray-600 font-bold w-16 relative ${inc > 0 ? 'text-strongs-gold' : ''}`}>
+              <td className={`border border-gray-600 font-bold w-[42px] min-w-[42px] max-w-[42px] text-xs relative text-center ${inc > 0 ? 'text-strongs-gold' : ''}`}>
                 <div className="absolute top-1/2 left-0 w-full border-t border-dashed border-gray-500/20 -translate-y-1/2 pointer-events-none"></div>
-                <span className="relative z-10 px-1">{simulated}%</span>
+                <span className="relative z-10">{simulated}%</span>
               </td>
               
               {DRILL_CATEGORIES.map(cat => (
                 cat.drills.map(drill => {
                   const trainsAttr = drill.attrs.includes(attr);
                   return (
-                    <td key={drill.name} className="border border-gray-600 text-center w-8 relative hover:bg-gray-700/50 transition-colors">
+                    <td key={drill.name} className="border border-gray-600 text-center w-[32px] min-w-[32px] max-w-[32px] relative hover:bg-gray-700/50 transition-colors">
                       <div className="absolute top-1/2 left-0 w-full border-t border-dashed border-gray-500/20 -translate-y-1/2 pointer-events-none"></div>
                       <div className="absolute top-0 left-1/2 h-full border-l border-dashed border-gray-500/20 -translate-x-1/2 pointer-events-none"></div>
                       {trainsAttr ? <span className={`${isWhite ? 'text-strongs-gold' : 'text-gray-400'} text-xl leading-none relative z-10 drop-shadow-md px-1`}>•</span> : null}
@@ -471,19 +471,19 @@ export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, 
                   </div>
                 </div>
               </th>
-              <th rowSpan={2} className="border border-gray-600 bg-gray-800 p-2 w-12">
-                <div className="[writing-mode:vertical-rl] rotate-180 whitespace-nowrap text-white font-bold text-xs mx-auto">Habilidade Iniciais</div>
+              <th rowSpan={2} className="border border-gray-600 bg-gray-800 p-0 w-[42px] min-w-[42px] max-w-[42px] overflow-hidden">
+                <div className="[writing-mode:vertical-rl] rotate-180 text-white font-bold text-[10px] mx-auto whitespace-nowrap h-40 flex items-center justify-center">Habilidade Iniciais</div>
               </th>
-              <th rowSpan={2} className="border border-gray-600 bg-gray-800 p-2 w-12">
-                <div className="[writing-mode:vertical-rl] rotate-180 whitespace-nowrap text-white font-bold text-xs mx-auto">Habilidade Real</div>
+              <th rowSpan={2} className="border border-gray-600 bg-gray-800 p-0 w-[42px] min-w-[42px] max-w-[42px] overflow-hidden">
+                <div className="[writing-mode:vertical-rl] rotate-180 text-white font-bold text-[10px] mx-auto whitespace-nowrap h-40 flex items-center justify-center">Habilidade Real</div>
               </th>
-              <th rowSpan={2} className="border border-gray-600 bg-gray-800 p-2 w-12">
-                <div className="[writing-mode:vertical-rl] rotate-180 whitespace-nowrap text-white font-bold text-xs mx-auto">Simulação</div>
+              <th rowSpan={2} className="border border-gray-600 bg-gray-800 p-0 w-[42px] min-w-[42px] max-w-[42px] overflow-hidden">
+                <div className="[writing-mode:vertical-rl] rotate-180 text-white font-bold text-[10px] mx-auto whitespace-nowrap h-40 flex items-center justify-center">Simulação</div>
               </th>
               
               {DRILL_CATEGORIES.map(cat => (
                 cat.drills.map(drill => (
-                  <th key={drill.name} className="border border-gray-600 bg-gray-200 text-black text-[10px] p-1 h-20 align-bottom w-8 relative">
+                  <th key={drill.name} className="border border-gray-600 bg-gray-200 text-black text-[10px] p-1 h-20 align-bottom w-[32px] min-w-[32px] max-w-[32px] relative">
                     <div className="absolute top-0 left-1/2 h-full border-l border-dashed border-gray-500/30 -translate-x-1/2 pointer-events-none"></div>
                     <div className="[writing-mode:vertical-rl] rotate-180 whitespace-nowrap mx-auto relative z-10">
                       {drill.difficulty}
@@ -495,7 +495,7 @@ export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, 
             <tr>
               {DRILL_CATEGORIES.map(cat => (
                 cat.drills.map(drill => (
-                  <th key={drill.name} className={`border border-gray-600 ${cat.color} p-2 h-40 w-8 relative`}>
+                  <th key={drill.name} className={`border border-gray-600 ${cat.color} p-2 h-40 w-[32px] min-w-[32px] max-w-[32px] relative`}>
                     <div className="absolute top-0 left-1/2 h-full border-l border-dashed border-gray-500/30 -translate-x-1/2 pointer-events-none"></div>
                     <div className="[writing-mode:vertical-rl] rotate-180 whitespace-nowrap text-xs font-bold mx-auto relative z-10">
                       {drill.name}
@@ -541,7 +541,7 @@ export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, 
                 cat.drills.map(drill => {
                   const eff = getDrillEfficiencyData(drill);
                   return (
-                    <td key={drill.name} className={`border border-gray-600 ${eff.bgColor} font-bold text-xs relative`}>
+                    <td key={drill.name} className={`border border-gray-600 ${eff.bgColor} font-bold text-xs relative w-[32px] min-w-[32px] max-w-[32px]`}>
                       <div className="absolute top-0 left-1/2 h-full border-l border-dashed border-gray-500/30 -translate-x-1/2 pointer-events-none"></div>
                       <span className="relative z-10">{eff.text}</span>
                     </td>
@@ -554,7 +554,7 @@ export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, 
               <td colSpan={3} className="border border-gray-600 bg-gray-800 text-white font-bold">{stats.simulatedAvg.toFixed(0)}%</td>
               {DRILL_CATEGORIES.map(cat => (
                 cat.drills.map(drill => (
-                  <td key={drill.name} className="border border-gray-600 bg-gray-800 text-white font-bold text-xs relative">
+                  <td key={drill.name} className="border border-gray-600 bg-gray-800 text-white font-bold text-xs w-[32px] min-w-[32px] max-w-[32px] relative">
                     <div className="absolute top-0 left-1/2 h-full border-l border-dashed border-gray-500/20 -translate-x-1/2 pointer-events-none"></div>
                     <span className="relative z-10">{getDrillAverage(drill)}</span>
                   </td>
@@ -577,14 +577,14 @@ export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, 
               </td>
               {DRILL_CATEGORIES.map(cat => (
                 cat.drills.map(drill => (
-                  <td key={drill.name} className="border border-gray-600 bg-black p-0 relative">
+                  <td key={drill.name} className="border border-gray-600 bg-black p-0 w-[32px] min-w-[32px] max-w-[32px] relative">
                     <div className="absolute top-0 left-1/2 h-full border-l border-dashed border-gray-500/20 -translate-x-1/2 pointer-events-none"></div>
                     <input 
                       type="number" 
                       min="0"
                       value={drills[drill.name] || ''} 
                       onChange={(e) => handleDrillChange(drill.name, parseInt(e.target.value) || 0)}
-                      className="w-full h-full text-center text-white bg-transparent font-bold outline-none py-1 focus:bg-strongs-gold/20 relative z-10"
+                      className="w-full h-full min-w-0 p-0 m-0 text-center text-white bg-transparent font-bold text-[10px] outline-none focus:bg-strongs-gold/20 relative z-10"
                     />
                   </td>
                 ))
@@ -597,7 +597,7 @@ export const TrainingSimulator: React.FC<{ currentUser: User | null, data: any, 
                 cat.drills.map(drill => {
                   const count = drills[drill.name] || 0;
                   return (
-                    <td key={drill.name} className="border border-gray-600 bg-gray-900 text-strongs-gold font-bold text-xs relative">
+                    <td key={drill.name} className="border border-gray-600 bg-gray-900 text-strongs-gold font-bold text-xs w-[32px] min-w-[32px] max-w-[32px] relative">
                       <div className="absolute top-0 left-1/2 h-full border-l border-dashed border-gray-500/20 -translate-x-1/2 pointer-events-none"></div>
                       <span className="relative z-10">{count > 0 ? count : 0}</span>
                     </td>
