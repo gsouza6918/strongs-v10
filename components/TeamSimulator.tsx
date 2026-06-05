@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Button } from './Button';
-import { Plus, Trash, AlertTriangle, Info, CheckCircle2, ChevronDown, Maximize, Minimize } from 'lucide-react';
+import { Plus, Trash, AlertTriangle, Info, CheckCircle2, ChevronDown, Maximize, X } from 'lucide-react';
 
 type Position = 'GK' | 'DC' | 'DL' | 'DR' | 'DMC' | 'MC' | 'ML' | 'MR' | 'AMC' | 'ST' | 'AML' | 'AMR';
 
@@ -354,8 +354,8 @@ export const TeamSimulator: React.FC = () => {
       </div>
 
       {/* Field Area */}
-      <div className={`transition-all duration-300 ${isFullscreen ? 'fixed inset-0 z-50 bg-black/95 p-2 sm:p-6 flex items-center justify-center' : 'bg-green-800/20 p-4 rounded-xl border border-gray-700 shadow-xl overflow-hidden relative'}`}>
-         <div className={`relative bg-[#4c8435] rounded-sm overflow-hidden shadow-inner border-2 border-white/40 ${isFullscreen ? 'w-full max-h-full aspect-[4/3] sm:aspect-[16/10] md:max-w-[90vw] md:max-h-[90vh]' : 'w-full aspect-[4/3] md:aspect-[3/2] min-[1300px]:aspect-[16/10]'}`}>
+      <div className={`transition-all duration-300 ${isFullscreen ? 'fixed inset-0 z-[9999] bg-black/95 p-0 sm:p-2 flex items-center justify-center' : 'bg-green-800/20 p-4 rounded-xl border border-gray-700 shadow-xl overflow-hidden relative'}`}>
+         <div className={`relative bg-[#4c8435] rounded-sm overflow-hidden shadow-inner border-zinc-500/50 ${isFullscreen ? 'w-full h-full sm:w-[98vw] sm:h-[98vh] border-2 aspect-[auto] sm:aspect-[16/10] max-h-screen' : 'w-full aspect-[4/3] md:aspect-[3/2] min-[1300px]:aspect-[16/10] border-2 border-white/40'}`}>
             
             {/* Fullscreen Toggle */}
             <button 
@@ -363,7 +363,7 @@ export const TeamSimulator: React.FC = () => {
                className="absolute top-2 right-2 md:top-4 md:right-4 z-50 bg-black/60 hover:bg-black/90 border border-white/20 rounded p-2 text-white shadow-xl transition-colors"
                title={isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
             >
-               {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+               {isFullscreen ? <X size={24} className="text-red-400 hover:text-red-300" /> : <Maximize size={20} />}
             </button>
 
             {/* Desktop Metrics (Inside Field) */}
@@ -539,33 +539,12 @@ export const TeamSimulator: React.FC = () => {
                   </h3>
                </div>
                
-               <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
-                  <div className="bg-black/50 border border-gray-700 px-6 py-4 rounded-lg flex flex-col items-center justify-center min-w-[150px]">
-                      <span className="text-xs font-bold text-gray-400 mb-1">NOTA FINAL</span>
-                      <span className={`text-5xl font-display font-bold ${Number(equilibriumScore.score) >= 9 ? 'text-green-500' : Number(equilibriumScore.score) >= 7 ? 'text-yellow-500' : 'text-red-500'}`}>
+               <div className="flex flex-col items-center justify-center gap-4">
+                  <div className="bg-black/50 border border-gray-700 px-8 py-6 rounded-lg flex flex-col items-center justify-center w-full max-w-sm">
+                      <span className="text-xs font-bold text-gray-400 mb-2 tracking-widest">NOTA FINAL</span>
+                      <span className={`text-6xl font-display font-bold ${Number(equilibriumScore.score) >= 9 ? 'text-green-500' : Number(equilibriumScore.score) >= 7 ? 'text-yellow-500' : 'text-red-500'}`}>
                         {equilibriumScore.score}
                       </span>
-                  </div>
-                  <div className="flex-1 space-y-2 w-full">
-                      {equilibriumScore.details.length === 0 ? (
-                         <div className="bg-green-900/20 border border-green-900/30 px-3 py-3 rounded flex items-center text-green-400 text-sm">
-                            <CheckCircle2 size={16} className="mr-2"/> Nenhuma penalidade aplicada. A equipe está equilibrada.
-                         </div>
-                      ) : (
-                         <div className="space-y-2">
-                           {equilibriumScore.details.map((detail, idx) => (
-                              <div key={idx} className="bg-red-900/20 border border-red-900/30 px-3 py-2 rounded text-red-400 text-sm">
-                                 {detail}
-                              </div>
-                           ))}
-                         </div>
-                      )}
-                      
-                      <div className="text-xs text-gray-500 mt-3 pt-3 border-t border-gray-800 font-mono">
-                         <span className="font-bold text-gray-400">INFO DE CÁLCULO:</span><br/>
-                         Gap Estrutural: {equilibriumScore.gap}<br/>
-                         Tolerância (35%): {equilibriumScore.tolerancia}<br/>
-                      </div>
                   </div>
                </div>
             </div>
