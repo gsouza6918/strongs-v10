@@ -282,6 +282,20 @@ export const Layout: React.FC<LayoutProps> = ({
         </button>
       )}
 
+      {/* Floating Action Button (FAB) for WhatsApp Group */}
+      {currentPage !== 'simulador' && (
+        <a
+          href="https://chat.whatsapp.com/BgVkLvb5y2BLBga2PKoJrk"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-8 right-6 z-40 bg-green-500 text-white px-4 py-3 rounded-full shadow-[0_0_20px_rgba(34,197,94,0.5)] border-2 border-white hover:scale-105 transition-transform duration-300 flex items-center gap-2"
+          title="Junte-se ao nosso grupo"
+        >
+          <MessageCircle size={24} className="text-white" />
+          <span className="font-bold uppercase tracking-wide text-sm">Junte-se ao nosso grupo</span>
+        </a>
+      )}
+
       {/* Footer */}
       <footer className="bg-strongs-darker border-t border-gray-800 py-6 text-center text-gray-500 text-sm relative z-10">
         <p>© {new Date().getFullYear()} STRONGS BRAZIL. Desordem e Regresso.</p>
