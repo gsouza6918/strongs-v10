@@ -1014,9 +1014,13 @@ const App: React.FC = () => {
             </div>
          </div>
          
-         <div className="p-6 md:p-10">
-            <div className="prose prose-invert prose-lg max-w-none text-gray-300 mb-12">
-               <div dangerouslySetInnerHTML={{ __html: post.content }} />
+         <div className="p-6 md:p-10 w-full overflow-hidden">
+            <div className="prose prose-invert prose-lg max-w-none text-gray-300 mb-12 prose-img:rounded-xl leading-relaxed">
+               <div 
+                  className="ql-editor !px-0 !pb-0 min-h-0 h-auto" 
+                  style={{ wordBreak: 'normal', overflowWrap: 'break-word', whiteSpace: 'pre-wrap' }}
+                  dangerouslySetInnerHTML={{ __html: (post.content || '').replace(/&nbsp;/g, ' ') }} 
+               />
             </div>
 
             {/* Botão Inferior Adicionado */}
