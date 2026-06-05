@@ -31,7 +31,7 @@ async function startServer() {
           const newsData = await dbRes.json();
           // newsData pode ser um Array ou Objeto, vamos garantir Array
           const newsItems = Array.isArray(newsData) ? newsData : Object.values(newsData || {});
-          const post = newsItems.find((n: any) => n && n.id === newsId);
+          const post = newsItems.find((n: any) => n && (n.slug === newsId || n.id === newsId));
 
           if (post) {
             // Renderizar um HTML estático apenas para o bot com as meta tags preenchidas
@@ -44,7 +44,7 @@ async function startServer() {
     <meta name="description" content="${post.subject || post.title}" />
     <meta property="og:title" content="${post.title} | Strongs Brazil" />
     <meta property="og:description" content="${post.subject || post.title}" />
-    <meta property="og:url" content="https://strongsbrazil.com/?id=${post.id}" />
+    <meta property="og:url" content="https://strongsbrazil.com/?id=${post.slug || post.id}" />
     <meta property="og:image" content="${post.coverImage}" />
     <meta property="og:image:secure_url" content="${post.coverImage}" />
     <meta property="og:type" content="article" />
@@ -54,7 +54,7 @@ async function startServer() {
     <meta name="twitter:image" content="${post.coverImage}" />
 </head>
 <body>
-    <script>window.location.href = "/?id=${post.id}";</script>
+    <script>window.location.href = "/?id=${post.slug || post.id}";</script>
 </body>
 </html>
             `;

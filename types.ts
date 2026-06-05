@@ -62,6 +62,7 @@ export interface Confederation {
 
 export interface NewsPost {
   id: string;
+  slug?: string;
   title: string;
   subject: string;
   coverImage: string;

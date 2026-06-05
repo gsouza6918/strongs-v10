@@ -483,7 +483,7 @@ const App: React.FC = () => {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {visibleNews.map(post => (
-                 <div key={post.id} className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 hover:border-strongs-gold transition-all duration-300 group cursor-pointer relative" onClick={() => handleNavigate('news-detail', post.id)}>
+                 <div key={post.id} className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 hover:border-strongs-gold transition-all duration-300 group cursor-pointer relative" onClick={() => handleNavigate('news-detail', post.slug || post.id)}>
                    {post.isPrivate && (
                        <div className="absolute top-2 right-2 z-20 bg-red-600 text-white text-[10px] font-bold uppercase px-2 py-1 rounded shadow-md flex items-center gap-1">
                            <Lock size={10} /> Privada
@@ -975,7 +975,7 @@ const App: React.FC = () => {
   );
 
   const NewsDetailPage = () => {
-    const post = data?.news.find(n => n.id === selectedNews);
+    const post = data?.news.find(n => n.slug === selectedNews || n.id === selectedNews);
 
     if (!post) return (
        <div className="text-center py-20">

@@ -847,6 +847,7 @@ const NewsManagement: React.FC<{ data: AppData, onUpdateNews: (n: NewsPost[]) =>
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [coverImage, setCoverImage] = useState('');
+    const [slug, setSlug] = useState('');
     const [isPrivate, setIsPrivate] = useState(false); // New state for privacy
     const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -863,6 +864,12 @@ const NewsManagement: React.FC<{ data: AppData, onUpdateNews: (n: NewsPost[]) =>
     const handleSaveNews = () => {
         if (!title || !content) return alert("Título e Conteúdo são obrigatórios.");
 
+        let finalSlug = slug.trim();
+        if (finalSlug) {
+            // format explicit slug
+            finalSlug = finalSlug.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+        }
+
         if (editingId) {
             // Updating existing news
             const updatedNewsList = data.news.map(n => {
@@ -872,6 +879,7 @@ const NewsManagement: React.FC<{ data: AppData, onUpdateNews: (n: NewsPost[]) =>
                         title,
                         content,
                         coverImage: coverImage || 'https://picsum.photos/seed/soccer/800/400',
+                        slug: finalSlug,
                         isPrivate // Add private state
                     };
                 }
@@ -886,6 +894,7 @@ const NewsManagement: React.FC<{ data: AppData, onUpdateNews: (n: NewsPost[]) =>
                 title,
                 subject: 'Notícias',
                 coverImage: coverImage || 'https://picsum.photos/seed/soccer/800/400',
+                slug: finalSlug,
                 content,
                 date: new Date().toISOString(),
                 isPrivate // Add private state
@@ -896,6 +905,7 @@ const NewsManagement: React.FC<{ data: AppData, onUpdateNews: (n: NewsPost[]) =>
         setTitle('');
         setContent('');
         setCoverImage('');
+        setSlug('');
         setIsPrivate(false);
     };
 
@@ -904,6 +914,7 @@ const NewsManagement: React.FC<{ data: AppData, onUpdateNews: (n: NewsPost[]) =>
         setTitle(post.title);
         setContent(post.content);
         setCoverImage(post.coverImage);
+        setSlug(post.slug || '');
         setIsPrivate(post.isPrivate || false); // Load private state
         
         // Scroll to top of editor
@@ -916,6 +927,7 @@ const NewsManagement: React.FC<{ data: AppData, onUpdateNews: (n: NewsPost[]) =>
         setTitle('');
         setContent('');
         setCoverImage('');
+        setSlug('');
         setIsPrivate(false);
     };
 
@@ -978,6 +990,21 @@ const NewsManagement: React.FC<{ data: AppData, onUpdateNews: (n: NewsPost[]) =>
                         value={coverImage} 
                         onChange={e => setCoverImage(e.target.value)} 
                     />
+                </div>
+
+                <div>
+                    <label className="text-xs text-gray-400 font-bold uppercase block mb-1">Link Personalizado (Opcional)</label>
+                    <div className="flex items-center">
+                        <span className="text-gray-500 bg-gray-800 border border-gray-600 border-r-0 rounded-l p-2 text-sm leading-none flex-shrink-0 align-middle">
+                            strongsbrazil.com/?id=
+                        </span>
+                        <input 
+                            className="w-full bg-gray-900 border border-gray-600 rounded-r p-2 text-white focus:border-strongs-gold outline-none text-sm" 
+                            placeholder="como-upar-jogadores" 
+                            value={slug} 
+                            onChange={e => setSlug(e.target.value)} 
+                        />
+                    </div>
                 </div>
 
                 <div>
