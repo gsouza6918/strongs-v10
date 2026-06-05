@@ -204,7 +204,7 @@ export const Layout: React.FC<LayoutProps> = ({
       </div>
 
       {/* Main Content */}
-      <main className="flex-grow container mx-auto px-4 py-8 relative z-10">
+      <main className="flex-grow container mx-auto px-4 py-8">
         {children}
       </main>
 

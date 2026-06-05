@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Layout } from './components/Layout';
 import { Rankings } from './components/Rankings';
 import { AdminPanel } from './components/AdminPanel';
@@ -985,6 +986,13 @@ const App: React.FC = () => {
 
     return (
       <div className="max-w-4xl mx-auto bg-gray-900 rounded-xl overflow-hidden shadow-2xl border border-gray-800 animate-fadeIn">
+         <Helmet>
+            <title>{post.title} | Strongs Brazil</title>
+            <meta name="description" content={post.subject} />
+            <meta property="og:title" content={`${post.title} | Strongs Brazil`} />
+            <meta property="og:description" content={post.subject} />
+            {post.coverImage && <meta property="og:image" content={post.coverImage} />}
+         </Helmet>
          <div className="h-64 md:h-96 w-full relative">
             <img src={post.coverImage} className="w-full h-full object-cover" alt={post.title}/>
             <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
@@ -1077,6 +1085,15 @@ const App: React.FC = () => {
       onLogout={handleLogout}
       confederations={data.confederations}
     >
+      {currentPage !== 'news-detail' && (
+        <Helmet>
+          <title>Strongs Brazil</title>
+          <meta name="description" content="Acompanhe rankings, gerencie sua confederação e faça parte da história da Strongs Brazil." />
+          <meta property="og:title" content="Strongs Brazil" />
+          <meta property="og:description" content="Acompanhe rankings, gerencie sua confederação e faça parte da história da Strongs Brazil." />
+        </Helmet>
+      )}
+
       {/* Global Error Banner for Save Failures */}
       {saveError && (
           <div className="bg-red-900/90 text-white text-center p-2 fixed top-0 left-0 right-0 z-[60] animate-fadeIn border-b border-red-500">

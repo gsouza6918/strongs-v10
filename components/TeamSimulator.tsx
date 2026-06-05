@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from './Button';
 import { Plus, Trash, AlertTriangle, Info, CheckCircle2, ChevronDown, Maximize, X } from 'lucide-react';
 
@@ -354,113 +355,118 @@ export const TeamSimulator: React.FC = () => {
       </div>
 
       {/* Field Area */}
-      <div className={`transition-all duration-300 ${isFullscreen ? 'fixed inset-0 z-[9999] bg-black/95 p-0 sm:p-2 flex items-center justify-center' : 'bg-green-800/20 p-4 rounded-xl border border-gray-700 shadow-xl overflow-hidden relative'}`}>
-         <div className={`relative bg-[#4c8435] rounded-sm overflow-hidden shadow-inner border-zinc-500/50 ${isFullscreen ? 'w-full h-full sm:w-[98vw] sm:h-[98vh] border-2 aspect-[auto] sm:aspect-[16/10] max-h-screen' : 'w-full aspect-[4/3] md:aspect-[3/2] min-[1300px]:aspect-[16/10] border-2 border-white/40'}`}>
-            
-            {/* Fullscreen Toggle */}
-            <button 
-               onClick={() => setIsFullscreen(!isFullscreen)}
-               className="absolute top-2 right-2 md:top-4 md:right-4 z-50 bg-black/60 hover:bg-black/90 border border-white/20 rounded p-2 text-white shadow-xl transition-colors"
-               title={isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
-            >
-               {isFullscreen ? <X size={24} className="text-red-400 hover:text-red-300" /> : <Maximize size={20} />}
-            </button>
+      {(() => {
+        const fieldContent = (
+          <div className={`transition-all duration-300 ${isFullscreen ? 'fixed inset-0 z-[9999] bg-black/95 p-0 sm:p-2 flex items-center justify-center' : 'bg-green-800/20 p-4 rounded-xl border border-gray-700 shadow-xl overflow-hidden relative'}`}>
+             <div className={`relative bg-[#4c8435] rounded-sm overflow-hidden shadow-inner border-zinc-500/50 ${isFullscreen ? 'w-full h-full sm:w-[98vw] sm:h-[98vh] border-2 aspect-[auto] sm:aspect-[16/10] max-h-screen' : 'w-full aspect-[4/3] md:aspect-[3/2] min-[1300px]:aspect-[16/10] border-2 border-white/40'}`}>
+                
+                {/* Fullscreen Toggle */}
+                <button 
+                   onClick={() => setIsFullscreen(!isFullscreen)}
+                   className="absolute top-2 right-2 md:top-4 md:right-4 z-50 bg-black/60 hover:bg-black/90 border border-white/20 rounded p-2 text-white shadow-xl transition-colors"
+                   title={isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
+                >
+                   {isFullscreen ? <X size={24} className="text-red-400 hover:text-red-300" /> : <Maximize size={20} />}
+                </button>
 
-            {/* Desktop Metrics (Inside Field) */}
-            <div className="hidden md:flex absolute top-4 left-4 z-40 flex-row gap-2">
-               <div className="relative">
-                 <button 
-                    onClick={() => setIsAvgExpanded(!isAvgExpanded)}
-                    className="bg-black/80 border border-gray-600 rounded-lg p-2 shadow-xl flex items-center gap-2 hover:bg-black transition-colors"
-                 >
-                    <div className="flex flex-col items-start px-2">
-                       <span className="text-[10px] text-gray-400 font-bold uppercase">Média Geral</span>
-                       <span className="text-xl font-display font-bold text-strongs-gold">{averageValue.toFixed(1)}</span>
-                    </div>
-                    <ChevronDown size={16} className={`text-gray-400 transition-transform ${isAvgExpanded ? 'rotate-180' : ''}`} />
-                 </button>
-                 {isAvgExpanded && (
-                    <div className="absolute top-full left-0 mt-2 bg-black/90 border border-gray-700 rounded-lg p-3 shadow-2xl flex flex-col gap-2 min-w-[140px] animate-fadeIn">
-                       <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                          <span className="text-xs text-gray-400 font-bold">Defesa</span>
-                          <span className="text-sm text-green-400 font-bold">{sectorAverages.defense.toFixed(1)}</span>
-                       </div>
-                       <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                          <span className="text-xs text-gray-400 font-bold">Meio-Campo</span>
-                          <span className="text-sm text-blue-400 font-bold">{sectorAverages.midfield.toFixed(1)}</span>
-                       </div>
-                       <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-400 font-bold">Ataque</span>
-                          <span className="text-sm text-red-400 font-bold">{sectorAverages.attack.toFixed(1)}</span>
-                       </div>
-                    </div>
-                 )}
-               </div>
+                {/* Desktop Metrics (Inside Field) */}
+                <div className="hidden md:flex absolute top-4 left-4 z-40 flex-row gap-2">
+                   <div className="relative">
+                     <button 
+                        onClick={() => setIsAvgExpanded(!isAvgExpanded)}
+                        className="bg-black/80 border border-gray-600 rounded-lg p-2 shadow-xl flex items-center gap-2 hover:bg-black transition-colors"
+                     >
+                        <div className="flex flex-col items-start px-2">
+                           <span className="text-[10px] text-gray-400 font-bold uppercase">Média Geral</span>
+                           <span className="text-xl font-display font-bold text-strongs-gold">{averageValue.toFixed(1)}</span>
+                        </div>
+                        <ChevronDown size={16} className={`text-gray-400 transition-transform ${isAvgExpanded ? 'rotate-180' : ''}`} />
+                     </button>
+                     {isAvgExpanded && (
+                        <div className="absolute top-full left-0 mt-2 bg-black/90 border border-gray-700 rounded-lg p-3 shadow-2xl flex flex-col gap-2 min-w-[140px] animate-fadeIn">
+                           <div className="flex justify-between items-center border-b border-gray-800 pb-1">
+                              <span className="text-xs text-gray-400 font-bold">Defesa</span>
+                              <span className="text-sm text-green-400 font-bold">{sectorAverages.defense.toFixed(1)}</span>
+                           </div>
+                           <div className="flex justify-between items-center border-b border-gray-800 pb-1">
+                              <span className="text-xs text-gray-400 font-bold">Meio-Campo</span>
+                              <span className="text-sm text-blue-400 font-bold">{sectorAverages.midfield.toFixed(1)}</span>
+                           </div>
+                           <div className="flex justify-between items-center">
+                              <span className="text-xs text-gray-400 font-bold">Ataque</span>
+                              <span className="text-sm text-red-400 font-bold">{sectorAverages.attack.toFixed(1)}</span>
+                           </div>
+                        </div>
+                     )}
+                   </div>
 
-               <div className="bg-black/80 border border-gray-600 rounded-lg p-2 shadow-xl flex items-center gap-2">
-                  <div className="flex flex-col items-start px-2">
-                     <span className="text-[10px] text-gray-400 font-bold uppercase">Equilíbrio</span>
-                     <div className="flex items-baseline gap-1">
-                        <span className="text-xl font-display font-bold text-blue-400">{equilibriumScore.score}</span>
-                        <span className="text-[10px] text-gray-500 font-medium">±0.2</span>
-                     </div>
-                  </div>
-               </div>
-            </div>
+                   <div className="bg-black/80 border border-gray-600 rounded-lg p-2 shadow-xl flex items-center gap-2">
+                      <div className="flex flex-col items-start px-2">
+                         <span className="text-[10px] text-gray-400 font-bold uppercase">Equilíbrio</span>
+                         <div className="flex items-baseline gap-1">
+                            <span className="text-xl font-display font-bold text-blue-400">{equilibriumScore.score}</span>
+                            <span className="text-[10px] text-gray-500 font-medium">±0.2</span>
+                         </div>
+                      </div>
+                   </div>
+                </div>
 
-            {/* Background Logo */}
-            <div className="absolute inset-0 opacity-[0.08] pointer-events-none overflow-hidden">
-               <img src="https://i.imgur.com/nArNLdF.png" alt="Strongs Brazil" className="absolute inset-0 w-full h-full object-cover" />
-            </div>
+                {/* Background Logo */}
+                <div className="absolute inset-0 opacity-[0.08] pointer-events-none overflow-hidden">
+                   <img src="https://i.imgur.com/nArNLdF.png" alt="Strongs Brazil" className="absolute inset-0 w-full h-full object-cover" />
+                </div>
 
-            {/* Pitch Markings */}
-            <div className="absolute inset-x-0 inset-y-[2%] border-y-2 border-x-2 border-white/30 rounded-sm pointer-events-none"></div>
-            {/* Center Line & Circle */}
-            <div className="absolute top-[2%] bottom-[2%] left-1/2 w-[2px] bg-white/30 -translate-x-1/2 pointer-events-none"></div>
-            <div className="absolute top-1/2 left-1/2 w-[20%] pt-[20%] border-2 border-white/30 rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
-            {/* Center dot */}
-            <div className="absolute top-1/2 left-1/2 w-[4px] h-[4px] bg-white/60 rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
-            
-            {/* Penalty Areas */}
-            <div className="absolute top-[20%] bottom-[20%] left-[2%] w-[15%] border-2 border-l-0 border-white/30 pointer-events-none"></div>
-            <div className="absolute top-[20%] bottom-[20%] right-[2%] w-[15%] border-2 border-r-0 border-white/30 pointer-events-none"></div>
-            
-            {/* Goal Areas */}
-            <div className="absolute top-[35%] bottom-[35%] left-[2%] w-[6%] border-2 border-l-0 border-white/30 pointer-events-none"></div>
-            <div className="absolute top-[35%] bottom-[35%] right-[2%] w-[6%] border-2 border-r-0 border-white/30 pointer-events-none"></div>
+                {/* Pitch Markings */}
+                <div className="absolute inset-x-0 inset-y-[2%] border-y-2 border-x-2 border-white/30 rounded-sm pointer-events-none"></div>
+                {/* Center Line & Circle */}
+                <div className="absolute top-[2%] bottom-[2%] left-1/2 w-[2px] bg-white/30 -translate-x-1/2 pointer-events-none"></div>
+                <div className="absolute top-1/2 left-1/2 w-[20%] pt-[20%] border-2 border-white/30 rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+                {/* Center dot */}
+                <div className="absolute top-1/2 left-1/2 w-[4px] h-[4px] bg-white/60 rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+                
+                {/* Penalty Areas */}
+                <div className="absolute top-[20%] bottom-[20%] left-[2%] w-[15%] border-2 border-l-0 border-white/30 pointer-events-none"></div>
+                <div className="absolute top-[20%] bottom-[20%] right-[2%] w-[15%] border-2 border-r-0 border-white/30 pointer-events-none"></div>
+                
+                {/* Goal Areas */}
+                <div className="absolute top-[35%] bottom-[35%] left-[2%] w-[6%] border-2 border-l-0 border-white/30 pointer-events-none"></div>
+                <div className="absolute top-[35%] bottom-[35%] right-[2%] w-[6%] border-2 border-r-0 border-white/30 pointer-events-none"></div>
 
-            {/* Arcs */}
-            <div className="absolute top-1/2 left-[17%] w-[7%] pt-[7%] border-2 border-l-0 border-t-white/30 border-r-white/30 border-b-white/30 rounded-r-full -translate-y-1/2 pointer-events-none"></div>
-            <div className="absolute top-1/2 right-[17%] w-[7%] pt-[7%] border-2 border-r-0 border-t-white/30 border-l-white/30 border-b-white/30 rounded-l-full -translate-y-1/2 pointer-events-none"></div>
+                {/* Arcs */}
+                <div className="absolute top-1/2 left-[17%] w-[7%] pt-[7%] border-2 border-l-0 border-t-white/30 border-r-white/30 border-b-white/30 rounded-r-full -translate-y-1/2 pointer-events-none"></div>
+                <div className="absolute top-1/2 right-[17%] w-[7%] pt-[7%] border-2 border-r-0 border-t-white/30 border-l-white/30 border-b-white/30 rounded-l-full -translate-y-1/2 pointer-events-none"></div>
 
-            {/* Grid overlay based on image logic (optional but looks cool) */}
-            <div className="absolute inset-0 flex flex-col pointer-events-none opacity-20">
-               <div className="flex-1 flex border-b border-black">
-                   <div className="flex-[0.25] border-r border-black" />
-                   <div className="flex-[0.25] border-r border-black" />
-                   <div className="flex-[0.25] border-r border-black" />
-                   <div className="flex-[0.25]" />
-               </div>
-               <div className="flex-1 flex border-b border-black">
-                   <div className="flex-[0.18]" />
-                   <div className="flex-[0.14] border-l border-r border-black" />
-                   <div className="flex-[0.18] border-r border-black" />
-                   <div className="flex-[0.20] border-r border-black" />
-                   <div className="flex-[0.18] border-r border-black" />
-                   <div className="flex-[0.12]" />
-               </div>
-               <div className="flex-1 flex">
-                   <div className="flex-[0.25] border-r border-black" />
-                   <div className="flex-[0.25] border-r border-black" />
-                   <div className="flex-[0.25] border-r border-black" />
-                   <div className="flex-[0.25]" />
-               </div>
-            </div>
+                {/* Grid overlay based on image logic (optional but looks cool) */}
+                <div className="absolute inset-0 flex flex-col pointer-events-none opacity-20">
+                   <div className="flex-1 flex border-b border-black">
+                       <div className="flex-[0.25] border-r border-black" />
+                       <div className="flex-[0.25] border-r border-black" />
+                       <div className="flex-[0.25] border-r border-black" />
+                       <div className="flex-[0.25]" />
+                   </div>
+                   <div className="flex-1 flex border-b border-black">
+                       <div className="flex-[0.18]" />
+                       <div className="flex-[0.14] border-l border-r border-black" />
+                       <div className="flex-[0.18] border-r border-black" />
+                       <div className="flex-[0.20] border-r border-black" />
+                       <div className="flex-[0.18] border-r border-black" />
+                       <div className="flex-[0.12]" />
+                   </div>
+                   <div className="flex-1 flex">
+                       <div className="flex-[0.25] border-r border-black" />
+                       <div className="flex-[0.25] border-r border-black" />
+                       <div className="flex-[0.25] border-r border-black" />
+                       <div className="flex-[0.25]" />
+                   </div>
+                </div>
 
-            {/* Players */}
-            {renderPlayers()}
-         </div>
-      </div>
+                {/* Players */}
+                {renderPlayers()}
+             </div>
+          </div>
+        );
+        return isFullscreen ? createPortal(fieldContent, document.body) : fieldContent;
+      })()}
 
       <div className="flex flex-col gap-6">
          <div className="flex justify-between items-center mb-1">
