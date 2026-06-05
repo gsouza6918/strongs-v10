@@ -272,7 +272,7 @@ export const TeamSimulator: React.FC = () => {
                      placeholder="Val"
                      value={player.value || ''}
                      onChange={(e) => handleUpdateValue(player.id, e.target.value)}
-                     className="w-12 h-6 text-xs text-center mt-1 bg-black/80 font-bold border border-white/30 rounded text-strongs-gold outline-none focus:border-strongs-gold shadow-md"
+                     className="w-16 h-6 text-xs text-center mt-1 bg-black/80 font-bold border border-white/30 rounded text-strongs-gold outline-none focus:border-strongs-gold shadow-md [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                </div>
             );
