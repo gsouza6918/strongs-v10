@@ -992,6 +992,10 @@ const App: React.FC = () => {
             <meta property="og:title" content={`${post.title} | Strongs Brazil`} />
             <meta property="og:description" content={post.subject} />
             {post.coverImage && <meta property="og:image" content={post.coverImage} />}
+            <meta name="twitter:title" content={`${post.title} | Strongs Brazil`} />
+            <meta name="twitter:description" content={post.subject} />
+            {post.coverImage && <meta name="twitter:image" content={post.coverImage} />}
+            <meta name="twitter:card" content="summary_large_image" />
          </Helmet>
          <div className="h-64 md:h-96 w-full relative">
             <img src={post.coverImage} className="w-full h-full object-cover" alt={post.title}/>
@@ -1091,6 +1095,10 @@ const App: React.FC = () => {
           <meta name="description" content="Acompanhe rankings, gerencie sua confederação e faça parte da história da Strongs Brazil." />
           <meta property="og:title" content="Strongs Brazil" />
           <meta property="og:description" content="Acompanhe rankings, gerencie sua confederação e faça parte da história da Strongs Brazil." />
+          <meta property="og:image" content="https://strongsbrazil.com/banner.png" />
+          <meta name="twitter:title" content="Strongs Brazil" />
+          <meta name="twitter:description" content="Acompanhe rankings, gerencie sua confederação e faça parte da história da Strongs Brazil." />
+          <meta name="twitter:image" content="https://strongsbrazil.com/banner.png" />
         </Helmet>
       )}
 
