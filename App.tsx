@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from './components/Layout';
 import { Rankings } from './components/Rankings';
 import { AdminPanel } from './components/AdminPanel';
-import { TrainingSimulator } from './components/TrainingSimulator';
+import { SimulatorPage } from './components/SimulatorPage';
 import { Button } from './components/Button';
 import { AppData, UserRole, ConfTier, JoinApplication, Member, GameResult, Attendance, Confederation, User, NewsPost, Top100Entry, ArchivedSeason, GlobalSettings, SavedTraining } from './types';
 import { loadData } from './services/storage'; // We keep this just for DEFAULT_DATA structure
@@ -1090,7 +1090,7 @@ const App: React.FC = () => {
       {currentPage === 'confederations' && <ConfederationsPage />}
       {currentPage === 'rankings' && <Rankings data={data} />}
       {currentPage === 'recrutamento' && <JoinUsPage />}
-      {currentPage === 'simulador' && <TrainingSimulator currentUser={currentUser} data={data} onDataChange={setData} onUpdateSavedTrainings={handleUpdateSavedTrainings} />}
+      {currentPage === 'simulador' && <SimulatorPage currentUser={currentUser} data={data} onDataChange={setData} onUpdateSavedTrainings={handleUpdateSavedTrainings} />}
       {currentPage === 'admin' && currentUser && (
           <AdminPanel 
             data={data} 
