@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import ReactQuill from 'react-quill-new'; // Importando o Editor Rico
-import { AppData, User, UserRole, Member, Confederation, NewsPost, JoinApplication, ArchivedSeason, Top100Entry, GameResult, Attendance, GlobalSettings, ConfTier, SavedTraining, EspionagemEntry } from '../types';
+import { AppData, User, UserRole, Member, Confederation, NewsPost, JoinApplication, ArchivedSeason, Top100Entry, GameResult, Attendance, GlobalSettings, ConfTier, SavedTraining, EspionagemEntry, CopaStrongsParticipant } from '../types';
 import { Button } from './Button';
 import { Trash2, ShieldCheck, ClipboardList, UserPlus, History, AlertOctagon, Users, Edit3, X, Save, CheckCircle2, XCircle, MinusCircle, UserMinus, UserCheck, Dumbbell, ArrowLeft, Settings, Lock, Plus, Power, Archive, AlertTriangle, FileEdit, Globe, EyeOff, MessageCircle, ExternalLink, Shield, Trophy, Search } from 'lucide-react';
 import { loadData } from '../services/storage';
@@ -25,6 +25,7 @@ interface AdminPanelProps {
   onUpdateSettings: (settings: GlobalSettings) => void;
   onUpdateSavedTrainings: (trainings: SavedTraining[]) => void;
   onUpdateEspionagem: (espionagemData: EspionagemEntry[]) => void;
+  onUpdateCopaStrongs: (copaData: CopaStrongsParticipant[]) => void;
   onDeleteExtensiveConfederation: (confId: string) => void;
   onResetDB: (fullData: AppData) => void;
   onUpdateData: (data: AppData) => void;
@@ -209,8 +210,7 @@ const MemberEditor: React.FC<{
 
     // Lock logic: Only Owner can edit past/future weeks. Managers/Mods locked to active week.
     const isWeekLocked = (weekIdx: number) => {
-        if (isOwner) return false;
-        return weekIdx !== activeWeekSetting;
+        return false;
     };
 
     return createPortal(
@@ -811,6 +811,31 @@ const ConfManagement: React.FC<{
                                     <div className="flex-grow min-w-0 pr-4">
                                         <div className="font-bold text-white text-base truncate">{member.teamName}</div>
                                         <div className="text-xs text-gray-500 truncate uppercase tracking-wider">{member.name}</div>
+                                        {(() => {
+                                            let played = 0;
+                                            let wins = 0;
+                                            let presentCount = 0;
+                                            member.weeks.forEach(week => {
+                                                if (week && week.games) {
+                                                    week.games.forEach(game => {
+                                                        if (game.result !== 'NONE') {
+                                                            played++;
+                                                            if (game.result === 'WIN') wins++;
+                                                        }
+                                                        if (game.attendance === 'PRESENT') {
+                                                            presentCount++;
+                                                        }
+                                                    });
+                                                }
+                                            });
+                                            const winRate = played > 0 ? Math.round((wins / played) * 100) : 0;
+                                            return (
+                                                <div className="text-[10px] text-gray-400 mt-1 flex gap-3 font-bold">
+                                                   <span title="Aproveitamento de Vitórias" className="text-yellow-500">🏆 {winRate}% Vitórias</span>
+                                                   <span title="Presenças Registradas" className="text-blue-400">✓ {presentCount} Presenças</span>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                     <div className="flex gap-2 flex-shrink-0">
                                         <Button 
@@ -1326,13 +1351,200 @@ const Top100Management: React.FC<{
     );
 };
 
+const CopaStrongsManagement: React.FC<{
+    data: AppData;
+    onUpdateCopaStrongs: (data: CopaStrongsParticipant[]) => void;
+    onUpdateSettings: (settings: GlobalSettings) => void;
+}> = ({ data, onUpdateCopaStrongs, onUpdateSettings }) => {
+    const list = data.copaStrongs || [];
+    
+    // UI state for Participant
+    const [name, setName] = useState('');
+    const [avatarUrl, setAvatarUrl] = useState('');
+    const [confederationId, setConfederationId] = useState('');
+    const [editingParticipantId, setEditingParticipantId] = useState<string | null>(null);
+    
+    const handleSaveParticipant = () => {
+        if (!name) return alert("Nome é obrigatório.");
+        
+        if (editingParticipantId) {
+            onUpdateCopaStrongs(list.map(p => p.id === editingParticipantId ? { ...p, name, avatarUrl, confederationId: confederationId || undefined } : p));
+            setEditingParticipantId(null);
+        } else {
+            const newPart: CopaStrongsParticipant = {
+                id: Math.random().toString(36).substr(2, 9),
+                name,
+                avatarUrl,
+                confederationId: confederationId || undefined,
+                results: []
+            };
+            onUpdateCopaStrongs([...list, newPart]);
+        }
+        setName('');
+        setAvatarUrl('');
+        setConfederationId('');
+    };
+
+    const handleEditParticipant = (p: CopaStrongsParticipant) => {
+        setEditingParticipantId(p.id);
+        setName(p.name);
+        setAvatarUrl(p.avatarUrl || '');
+        setConfederationId(p.confederationId || '');
+    };
+
+    const handleCancelEdit = () => {
+        setEditingParticipantId(null);
+        setName('');
+        setAvatarUrl('');
+        setConfederationId('');
+    };
+
+    const handleDeleteParticipant = (id: string) => {
+        if (!window.confirm("Deseja excluir este participante e seu histórico?")) return;
+        onUpdateCopaStrongs(list.filter(p => p.id !== id));
+        if (data.settings.copaStrongsCurrentChampionId === id) {
+            onUpdateSettings({ ...data.settings, copaStrongsCurrentChampionId: undefined });
+        }
+    };
+
+    const handleSetCurrentChampion = (id: string) => {
+        onUpdateSettings({ ...data.settings, copaStrongsCurrentChampionId: id === data.settings.copaStrongsCurrentChampionId ? undefined : id });
+    };
+
+    const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
+    const [season, setSeason] = useState<number>(1);
+    const [position, setPosition] = useState<'Campeão' | 'Vice-Campeão' | 'Terceiro Lugar'>('Campeão');
+
+    const handleAddResult = () => {
+        if (!selectedParticipantId || !season) return;
+        const participant = list.find(p => p.id === selectedParticipantId);
+        if (!participant) return;
+        
+        const newResult = { season: Number(season), position };
+        
+        const updatedList = list.map(p => {
+            if (p.id === selectedParticipantId) {
+                return { ...p, results: [...(p.results || []), newResult] };
+            }
+            return p;
+        });
+        
+        onUpdateCopaStrongs(updatedList);
+        setSeason(Number(season) + 1);
+    };
+
+    const handleDeleteResult = (participantId: string, resultIdx: number) => {
+        const updatedList = list.map(p => {
+            if (p.id === participantId) {
+                const newRes = [...(p.results || [])];
+                newRes.splice(resultIdx, 1);
+                return { ...p, results: newRes };
+            }
+            return p;
+        });
+        onUpdateCopaStrongs(updatedList);
+    };
+
+    return (
+        <div className="space-y-6">
+            <h3 className="font-display text-2xl text-white uppercase tracking-wider mb-2">Gerenciar Copa Strongs</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Cadastro de Participantes */}
+                <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700 space-y-4">
+                    <h4 className="text-lg font-bold text-white mb-2 pb-2 border-b border-gray-700">
+                        {editingParticipantId ? 'Editar Participante' : 'Novo Participante'}
+                    </h4>
+                    <div>
+                        <label className="text-xs text-gray-500 font-bold uppercase block mb-1">Nome do Manager</label>
+                        <input className="w-full bg-black/40 border border-gray-600 rounded p-2 text-white" value={name} onChange={e => setName(e.target.value)} />
+                    </div>
+                    <div>
+                        <label className="text-xs text-gray-500 font-bold uppercase block mb-1">URL do Avatar</label>
+                        <input className="w-full bg-black/40 border border-gray-600 rounded p-2 text-white" value={avatarUrl} onChange={e => setAvatarUrl(e.target.value)} placeholder="https://..." />
+                    </div>
+                    <div>
+                        <label className="text-xs text-gray-500 font-bold uppercase block mb-1">Confederação (Opcional)</label>
+                        <select className="w-full bg-black/40 border border-gray-600 rounded p-2 text-white" value={confederationId} onChange={e => setConfederationId(e.target.value)}>
+                            <option value="">Nenhuma / Sem Confederação</option>
+                            {data.confederations.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button onClick={handleSaveParticipant} fullWidth>{editingParticipantId ? 'Salvar Alterações' : 'Adicionar Participante'}</Button>
+                        {editingParticipantId && (
+                            <Button onClick={handleCancelEdit} variant="secondary">Cancelar</Button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Lançamento de Resultados */}
+                <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700 space-y-4">
+                    <h4 className="text-lg font-bold text-white mb-2 pb-2 border-b border-gray-700">Lançar Resultado</h4>
+                    <div>
+                        <label className="text-xs text-gray-500 font-bold uppercase block mb-1">Participante</label>
+                        <select className="w-full bg-black/40 border border-gray-600 rounded p-2 text-white" value={selectedParticipantId || ''} onChange={e => setSelectedParticipantId(e.target.value)}>
+                            <option value="">Selecione...</option>
+                            {list.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-xs text-gray-500 font-bold uppercase block mb-1">Temporada (Num)</label>
+                            <input type="number" min="1" max="1000" className="w-full bg-black/40 border border-gray-600 rounded p-2 text-white" value={season} onChange={e => setSeason(parseInt(e.target.value))} />
+                        </div>
+                        <div>
+                            <label className="text-xs text-gray-500 font-bold uppercase block mb-1">Posição</label>
+                            <select className="w-full bg-black/40 border border-gray-600 rounded p-2 text-white" value={position} onChange={e => setPosition(e.target.value as any)}>
+                                <option value="Campeão">Campeão (+20)</option>
+                                <option value="Vice-Campeão">Vice-Campeão (+10)</option>
+                                <option value="Terceiro Lugar">Terceiro Lugar (+5)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <Button onClick={handleAddResult} fullWidth disabled={!selectedParticipantId}>Adicionar Resultado</Button>
+                </div>
+            </div>
+
+            {/* List */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                {list.map(p => (
+                    <div key={p.id} className="bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-4 relative">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                {p.avatarUrl ? <img src={p.avatarUrl} className="w-10 h-10 rounded-full object-cover border border-gray-600" /> : <div className="w-10 h-10 rounded-full bg-gray-800 border border-gray-600 flex items-center justify-center text-gray-500"><UserPlus size={16} /></div>}
+                                <span className="text-white font-bold text-lg">{p.name}</span>
+                            </div>
+                            <div className="flex gap-2">
+                                <button onClick={() => handleSetCurrentChampion(p.id)} className={`${data.settings.copaStrongsCurrentChampionId === p.id ? 'text-yellow-400' : 'text-gray-500'} hover:text-yellow-400 transition-colors`} title="Destacar como Atual Campeão"><Trophy size={16} /></button>
+                                <button onClick={() => handleEditParticipant(p)} className="text-gray-500 hover:text-blue-500"><Edit3 size={16} /></button>
+                                <button onClick={() => handleDeleteParticipant(p.id)} className="text-gray-500 hover:text-red-500"><Trash2 size={16} /></button>
+                            </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                            {(p.results || []).map((res, i) => (
+                                <div key={i} className="flex justify-between items-center bg-black/30 p-2 rounded text-sm">
+                                    <span className="text-gray-400">Temp <span className="text-white font-bold">{res.season}</span> • <span className={res.position === 'Campeão' ? 'text-yellow-400 font-bold' : res.position === 'Vice-Campeão' ? 'text-slate-300' : 'text-orange-600'}>{res.position}</span></span>
+                                    <button onClick={() => handleDeleteResult(p.id, i)} className="text-gray-600 hover:text-red-500"><Trash2 size={12} /></button>
+                                </div>
+                            ))}
+                            {(!p.results || p.results.length === 0) && <p className="text-xs text-gray-600 italic">Sem resultados.</p>}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 export const AdminPanel: React.FC<AdminPanelProps> = (props) => {
   const isOwner = props.currentUser.role === 'OWNER';
   const isOwnerOrAdmin = props.currentUser.role === 'OWNER' || props.currentUser.role === 'ADMIN';
   const isAdminOrMod = isOwnerOrAdmin || props.currentUser.role === 'MOD';
   const isManagerOrAbove = isAdminOrMod || props.currentUser.role === 'MANAGER';
   
-  const [activeTab, setActiveTab] = useState<'USERS' | 'CONFS' | 'NEWS' | 'JOIN_APPS' | 'SEASONS' | 'TOP100' | 'CONFIG' | 'TREINOS' | 'ESPIONAGEM' | 'RESET'>(isManagerOrAbove ? 'CONFS' : 'TREINOS');
+  const [activeTab, setActiveTab] = useState<'USERS' | 'CONFS' | 'NEWS' | 'JOIN_APPS' | 'SEASONS' | 'TOP100' | 'COPA_STRONGS' | 'CONFIG' | 'TREINOS' | 'ESPIONAGEM' | 'RESET'>(isManagerOrAbove ? 'CONFS' : 'TREINOS');
 
   const allTabs = [
     { id: 'USERS', icon: Users, label: 'Usuários', adminOnly: true },
@@ -1341,6 +1553,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = (props) => {
     { id: 'JOIN_APPS', icon: UserPlus, label: 'Solicitações', adminOnly: true, ownerOnly: false, ownerOrAdminOnly: false, managerOrAboveOnly: false },
     { id: 'SEASONS', icon: History, label: 'Arquivo', ownerOrAdminOnly: true, ownerOnly: false, adminOnly: false, managerOrAboveOnly: false },
     { id: 'TOP100', icon: Trophy, label: 'Top 100', ownerOrAdminOnly: true, ownerOnly: false, adminOnly: false, managerOrAboveOnly: false },
+    { id: 'COPA_STRONGS', icon: Trophy, label: 'Copa Strongs', ownerOrAdminOnly: true, ownerOnly: false, adminOnly: false, managerOrAboveOnly: false },
     { id: 'ESPIONAGEM', icon: Search, label: 'Espionagem', ownerOnly: true, ownerOrAdminOnly: false, adminOnly: false, managerOrAboveOnly: false },
     { id: 'TREINOS', icon: Dumbbell, label: 'Treinos Salvos', adminOnly: false, ownerOnly: false, ownerOrAdminOnly: false, managerOrAboveOnly: false },
   ];
@@ -1389,6 +1602,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = (props) => {
          {activeTab === 'JOIN_APPS' && <JoinRequestsManagement data={props.data} onUpdateJoinApps={props.onUpdateJoinApps} />}
          {activeTab === 'SEASONS' && <SeasonsManagement data={props.data} onUpdateSeasons={props.onUpdateSeasons} onSaveMember={props.onSaveMember} />}
          {activeTab === 'TOP100' && <Top100Management data={props.data} onUpdateTop100={props.onUpdateTop100} />}
+         {activeTab === 'COPA_STRONGS' && <CopaStrongsManagement data={props.data} onUpdateCopaStrongs={props.onUpdateCopaStrongs} onUpdateSettings={props.onUpdateSettings} />}
          {activeTab === 'ESPIONAGEM' && isOwner && <EspionagemManagement data={props.data.espionagem || []} onUpdate={props.onUpdateEspionagem} />}
          {activeTab === 'TREINOS' && <SavedTrainingsManagement data={props.data} currentUser={props.currentUser} onUpdateData={props.onUpdateData} onUpdateSavedTrainings={props.onUpdateSavedTrainings} />}
          {activeTab === 'CONFIG' && isOwner && <SettingsManagement data={props.data} onUpdateSettings={props.onUpdateSettings} />}

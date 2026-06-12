@@ -257,7 +257,7 @@ export const Layout: React.FC<LayoutProps> = ({
       )}
 
       {/* Floating Action Button (FAB) for "Quero me Juntar" */}
-      {currentPage !== 'simulador' && (
+      {currentPage !== 'simulador' && currentPage !== 'rankings' && (
         <button
           onClick={() => onNavigate('recrutamento')}
           className="fixed bottom-40 right-6 z-40 bg-strongs-gold text-strongs-darker p-4 rounded-full shadow-[0_0_20px_rgba(255,215,0,0.5)] border-2 border-white hover:scale-110 transition-transform duration-300 group"
@@ -271,7 +271,7 @@ export const Layout: React.FC<LayoutProps> = ({
       )}
 
       {/* Floating Action Button (FAB) for "Consiga Maletas" */}
-      {currentPage !== 'simulador' && (
+      {currentPage !== 'simulador' && currentPage !== 'rankings' && (
         <button
           onClick={() => setIsMaletasExpanded(true)}
           className="fixed bottom-24 right-6 z-40 bg-gray-900 text-white px-4 py-3 rounded-full shadow-[0_0_20px_rgba(34,197,94,0.3)] border-2 border-green-500 hover:scale-105 transition-transform duration-300 flex items-center gap-2"

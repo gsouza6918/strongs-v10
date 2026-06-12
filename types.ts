@@ -28,6 +28,7 @@ export interface User {
 // --- NEW SETTINGS INTERFACE ---
 export interface GlobalSettings {
   activeWeek: number; // 0, 1, 2, or 3
+  copaStrongsCurrentChampionId?: string;
 }
 
 export type GameResult = 'WIN' | 'DRAW' | 'LOSS' | 'NONE';
@@ -153,6 +154,19 @@ export interface EspionagemEntry {
   resultadoSemanal?: (number | null)[];
 }
 
+export interface CopaStrongsResult {
+  season: number;
+  position: 'Campeão' | 'Vice-Campeão' | 'Terceiro Lugar';
+}
+
+export interface CopaStrongsParticipant {
+  id: string;
+  name: string;
+  avatarUrl: string;
+  confederationId?: string;
+  results: CopaStrongsResult[];
+}
+
 export interface AppData {
   users: User[];
   confederations: Confederation[];
@@ -165,5 +179,6 @@ export interface AppData {
   settings: GlobalSettings; // New Field
   savedTrainings?: SavedTraining[];
   espionagem?: EspionagemEntry[];
+  copaStrongs?: CopaStrongsParticipant[];
   currentUser: User | null;
 }

@@ -206,6 +206,7 @@ const App: React.FC = () => {
                 archivedSeasons: ensureArray(val.archivedSeasons),
                 savedTrainings: ensureArray(val.savedTrainings),
                 espionagem: ensureArray(val.espionagem),
+                copaStrongs: ensureArray(val.copaStrongs),
                 settings: val.settings || { activeWeek: 0 },
                 currentUser: sessionUser 
             };
@@ -349,6 +350,12 @@ const App: React.FC = () => {
       if (!db) return;
       const payload = sanitizeForFirebase(espionagemData);
       await set(ref(db, 'strongs_db/espionagem'), payload);
+  };
+
+  const handleUpdateCopaStrongs = async (copaData: CopaStrongsParticipant[]) => {
+      if (!db) return;
+      const payload = sanitizeForFirebase(copaData);
+      await set(ref(db, 'strongs_db/copaStrongs'), payload);
   };
 
   const handleDeleteExtensiveConfederation = async (confId: string) => {
@@ -1117,7 +1124,7 @@ const App: React.FC = () => {
 
       {currentPage === 'home' && HomePage()}
       {currentPage === 'confederations' && <ConfederationsPage />}
-      {currentPage === 'rankings' && <Rankings data={data} />}
+      {currentPage === 'rankings' && <Rankings data={data} currentUser={currentUser} />}
       {currentPage === 'recrutamento' && <JoinUsPage />}
       {currentPage === 'simulador' && <SimulatorPage currentUser={currentUser} data={data} onDataChange={setData} onUpdateSavedTrainings={handleUpdateSavedTrainings} />}
       {currentPage === 'admin' && currentUser && (
@@ -1136,6 +1143,7 @@ const App: React.FC = () => {
             onUpdateSettings={handleUpdateSettings} // Pass new settings handler
             onUpdateSavedTrainings={handleUpdateSavedTrainings}
             onUpdateEspionagem={handleUpdateEspionagem}
+            onUpdateCopaStrongs={handleUpdateCopaStrongs}
             onDeleteExtensiveConfederation={handleDeleteExtensiveConfederation}
             onResetDB={handleResetDB}
             onUpdateData={setData}
