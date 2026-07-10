@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { UserRole, User, Confederation, ConfTier } from '../types';
-import { Menu, X, LogOut, Shield, User as UserIcon, Trophy, Home, Newspaper, Users, Circle, UserPlus, Calculator, Globe, Briefcase, MessageCircle } from 'lucide-react';
+import { Menu, X, LogOut, Shield, User as UserIcon, Trophy, Home, Newspaper, Users, Circle, UserPlus, Calculator, Globe, Briefcase, MessageCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -23,6 +23,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
   const [isMaletasExpanded, setIsMaletasExpanded] = useState(false);
+  const [isFabsVisible, setIsFabsVisible] = useState(true);
 
   // Filter only active confederations for display in marquee
   const activeConfs = confederations.filter(c => c.active !== false);
@@ -256,44 +257,68 @@ export const Layout: React.FC<LayoutProps> = ({
         </div>
       )}
 
-      {/* Floating Action Button (FAB) for "Quero me Juntar" */}
-      {currentPage !== 'simulador' && currentPage !== 'rankings' && (
-        <button
-          onClick={() => onNavigate('recrutamento')}
-          className="fixed bottom-40 right-6 z-40 bg-strongs-gold text-strongs-darker p-4 rounded-full shadow-[0_0_20px_rgba(255,215,0,0.5)] border-2 border-white hover:scale-110 transition-transform duration-300 group"
-          title="Inscreva-se em uma confederação"
-        >
-          <UserPlus size={32} strokeWidth={2.5} />
-          <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-black/80 text-white px-3 py-1 rounded text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none font-bold uppercase tracking-wide">
-            Recrutamento
-          </span>
-        </button>
-      )}
-
-      {/* Floating Action Button (FAB) for "Consiga Maletas" */}
-      {currentPage !== 'simulador' && currentPage !== 'rankings' && (
-        <button
-          onClick={() => setIsMaletasExpanded(true)}
-          className="fixed bottom-24 right-6 z-40 bg-gray-900 text-white px-4 py-3 rounded-full shadow-[0_0_20px_rgba(34,197,94,0.3)] border-2 border-green-500 hover:scale-105 transition-transform duration-300 flex items-center gap-2"
-          title="Consiga Maletas"
-        >
-          <Briefcase size={24} className="text-green-500" />
-          <span className="font-bold uppercase tracking-wide text-sm">Consiga Maletas</span>
-        </button>
-      )}
-
-      {/* Floating Action Button (FAB) for WhatsApp Group */}
+      {/* Floating Action Buttons Container */}
       {currentPage !== 'simulador' && (
-        <a
-          href="https://chat.whatsapp.com/BgVkLvb5y2BLBga2PKoJrk"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="fixed bottom-8 right-6 z-40 bg-green-500 text-white px-4 py-3 rounded-full shadow-[0_0_20px_rgba(34,197,94,0.5)] border-2 border-white hover:scale-105 transition-transform duration-300 flex items-center gap-2"
-          title="Junte-se ao nosso grupo"
-        >
-          <MessageCircle size={24} className="text-white" />
-          <span className="font-bold uppercase tracking-wide text-sm">Junte-se ao nosso grupo</span>
-        </a>
+        <div className="fixed bottom-8 right-6 z-40 flex flex-col items-end gap-4">
+          {isFabsVisible ? (
+            <>
+              {/* Toggle Button (Minimize) */}
+              <button 
+                onClick={() => setIsFabsVisible(false)}
+                className="bg-gray-800 text-gray-400 hover:text-white p-2 rounded-full shadow-lg border border-gray-700 transition-colors"
+                title="Minimizar botões"
+              >
+                <ChevronRight size={20} />
+              </button>
+
+              {/* Recrutamento */}
+              {currentPage !== 'rankings' && (
+                <button
+                  onClick={() => onNavigate('recrutamento')}
+                  className="bg-strongs-gold text-strongs-darker p-4 rounded-full shadow-[0_0_20px_rgba(255,215,0,0.5)] border-2 border-white hover:scale-110 transition-transform duration-300 group relative"
+                  title="Inscreva-se em uma confederação"
+                >
+                  <UserPlus size={32} strokeWidth={2.5} />
+                  <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-black/80 text-white px-3 py-1 rounded text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none font-bold uppercase tracking-wide">
+                    Recrutamento
+                  </span>
+                </button>
+              )}
+
+              {/* Consiga Maletas */}
+              {currentPage !== 'rankings' && (
+                <button
+                  onClick={() => setIsMaletasExpanded(true)}
+                  className="bg-gray-900 text-white px-4 py-3 rounded-full shadow-[0_0_20px_rgba(34,197,94,0.3)] border-2 border-green-500 hover:scale-105 transition-transform duration-300 flex items-center gap-2"
+                  title="Consiga Maletas"
+                >
+                  <Briefcase size={24} className="text-green-500" />
+                  <span className="font-bold uppercase tracking-wide text-sm hidden sm:inline">Consiga Maletas</span>
+                </button>
+              )}
+
+              {/* WhatsApp Group */}
+              <a
+                href="https://chat.whatsapp.com/BgVkLvb5y2BLBga2PKoJrk"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-green-500 text-white px-4 py-3 rounded-full shadow-[0_0_20px_rgba(34,197,94,0.5)] border-2 border-white hover:scale-105 transition-transform duration-300 flex items-center gap-2"
+                title="Junte-se ao nosso grupo"
+              >
+                <MessageCircle size={24} className="text-white" />
+                <span className="font-bold uppercase tracking-wide text-sm hidden sm:inline">Junte-se ao nosso grupo</span>
+              </a>
+            </>
+          ) : (
+            <button 
+              onClick={() => setIsFabsVisible(true)}
+              className="bg-gray-800 text-white p-4 rounded-full shadow-[0_0_20px_rgba(0,0,0,0.5)] border-2 border-gray-600 hover:scale-110 hover:border-strongs-gold hover:text-strongs-gold transition-all duration-300 flex items-center justify-center animate-pulse-slow"
+              title="Mostrar botões"
+            >
+              <ChevronLeft size={24} />
+            </button>
+          )}
+        </div>
       )}
 
       {/* Footer */}
