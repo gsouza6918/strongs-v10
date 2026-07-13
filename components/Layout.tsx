@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { UserRole, User, Confederation, ConfTier } from '../types';
-import { Menu, X, LogOut, Shield, User as UserIcon, Trophy, Home, Newspaper, Users, Circle, UserPlus, Calculator, Globe, Briefcase, MessageCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Menu, X, LogOut, Shield, User as UserIcon, Trophy, Home, Newspaper, Users, Circle, UserPlus, Calculator, Globe, Briefcase, MessageCircle, ChevronLeft, ChevronRight, Maximize, Minimize } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -25,12 +25,35 @@ export const Layout: React.FC<LayoutProps> = ({
   const [isMaletasExpanded, setIsMaletasExpanded] = useState(false);
   const [isFabsVisible, setIsFabsVisible] = useState(true);
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const storyImages = [
     'https://i.imgur.com/1U084Wh.png',
     'https://i.imgur.com/hcC9Hrt.png',
     'https://i.imgur.com/EebQZSn.png'
   ];
+
+  const toggleFullscreen = () => {
+    const elem = document.getElementById('maletas-image-container');
+    if (!elem) return;
+
+    if (!document.fullscreenElement) {
+      elem.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -247,7 +270,7 @@ export const Layout: React.FC<LayoutProps> = ({
             </div>
             
             {/* Body */}
-            <div className="flex-1 overflow-hidden relative bg-black/80 flex flex-col items-center justify-center">
+            <div id="maletas-image-container" className="flex-1 overflow-hidden relative bg-black/80 flex flex-col items-center justify-center">
               <style>{`
                 @keyframes storyProgress {
                   0% { width: 0%; }
@@ -256,7 +279,7 @@ export const Layout: React.FC<LayoutProps> = ({
               `}</style>
               
               {/* Progress Bars */}
-              <div className="absolute top-4 left-4 right-4 flex gap-2 z-20">
+              <div className="absolute top-4 left-4 right-16 flex gap-2 z-20">
                 {storyImages.map((_, idx) => (
                   <div key={idx} className="flex-1 h-1.5 bg-gray-600/50 rounded-full overflow-hidden backdrop-blur-sm">
                     <div 
@@ -267,6 +290,15 @@ export const Layout: React.FC<LayoutProps> = ({
                   </div>
                 ))}
               </div>
+
+              {/* Fullscreen Toggle */}
+              <button
+                onClick={toggleFullscreen}
+                className="absolute top-2 right-4 z-20 p-2 text-white hover:bg-white/20 rounded-full transition-colors"
+                title={isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
+              >
+                {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+              </button>
 
               {/* Navigation Left */}
               <button 
