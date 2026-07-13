@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserRole, User, Confederation, ConfTier } from '../types';
 import { Menu, X, LogOut, Shield, User as UserIcon, Trophy, Home, Newspaper, Users, Circle, UserPlus, Calculator, Globe, Briefcase, MessageCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -24,6 +24,26 @@ export const Layout: React.FC<LayoutProps> = ({
   const [imgError, setImgError] = useState(false);
   const [isMaletasExpanded, setIsMaletasExpanded] = useState(false);
   const [isFabsVisible, setIsFabsVisible] = useState(true);
+  const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
+
+  const storyImages = [
+    'https://i.imgur.com/1U084Wh.png',
+    'https://i.imgur.com/hcC9Hrt.png',
+    'https://i.imgur.com/EebQZSn.png'
+  ];
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isMaletasExpanded) {
+      timer = setInterval(() => {
+        setCurrentStoryIndex((prev) => (prev + 1) % storyImages.length);
+      }, 20000);
+    } else {
+      setCurrentStoryIndex(0);
+    }
+    return () => clearInterval(timer);
+  }, [isMaletasExpanded, currentStoryIndex]);
+
 
   // Filter only active confederations for display in marquee
   const activeConfs = confederations.filter(c => c.active !== false);
@@ -227,11 +247,48 @@ export const Layout: React.FC<LayoutProps> = ({
             </div>
             
             {/* Body */}
-            <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center bg-black/20">
+            <div className="flex-1 overflow-hidden relative bg-black/80 flex flex-col items-center justify-center">
+              <style>{`
+                @keyframes storyProgress {
+                  0% { width: 0%; }
+                  100% { width: 100%; }
+                }
+              `}</style>
+              
+              {/* Progress Bars */}
+              <div className="absolute top-4 left-4 right-4 flex gap-2 z-20">
+                {storyImages.map((_, idx) => (
+                  <div key={idx} className="flex-1 h-1.5 bg-gray-600/50 rounded-full overflow-hidden backdrop-blur-sm">
+                    <div 
+                      key={`progress-${idx}-${currentStoryIndex}`}
+                      className={`h-full bg-white ${idx === currentStoryIndex ? '' : idx < currentStoryIndex ? 'w-full' : 'w-0'}`}
+                      style={idx === currentStoryIndex ? { animation: 'storyProgress 20s linear forwards' } : {}}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Navigation Left */}
+              <button 
+                className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-black/40 hover:bg-black/60 rounded-full text-white z-20 transition-colors"
+                onClick={() => setCurrentStoryIndex(prev => prev > 0 ? prev - 1 : storyImages.length - 1)}
+              >
+                <ChevronLeft size={32} />
+              </button>
+
+              {/* Navigation Right */}
+              <button 
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-black/40 hover:bg-black/60 rounded-full text-white z-20 transition-colors"
+                onClick={() => setCurrentStoryIndex(prev => (prev + 1) % storyImages.length)}
+              >
+                <ChevronRight size={32} />
+              </button>
+
               <img 
-                src="https://i.imgur.com/plELF8k.png" 
+                key={currentStoryIndex}
+                src={storyImages[currentStoryIndex]} 
                 alt="Consiga Maletas" 
-                className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+                className="w-full h-full object-contain animate-fadeIn"
               />
             </div>
             
